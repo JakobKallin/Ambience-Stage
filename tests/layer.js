@@ -1,37 +1,34 @@
-describe('Ambience layer', function() {
-	var ambience;
-	
-	var layer;
-	var layerNode;
+describe('Ambience stage', function() {
+	var stage;
+	var stageNode;
 	
 	beforeEach(function() {
-		layerNode = document.createElement('div');
-		document.body.appendChild(layerNode);
-		layer = new Ambience.Layer(layerNode);
-		ambience = new Ambience(layer, new Ambience.Layer(document.createElement('div')));
+		stageNode = document.createElement('div');
+		document.body.appendChild(stageNode);
+		stage = new Ambience.Stage(stageNode);
 	});
 	
 	afterEach(function() {
-		document.body.removeChild(layerNode);
+		document.body.removeChild(stageNode);
 	});
 	
 	it('stops any old scene when playing a new scene', function() {
 		var scene = new Ambience.Scene();
 		scene.image = 'test-image.jpg';
-		ambience.play(scene);
+		stage.play(scene);
 		
 		var newScene = new Ambience.Scene();
 		scene.image = 'test-image.jpg';
-		ambience.play(scene);
+		stage.play(scene);
 		
-		expect(layer.imageCount).toBe(1);
+		expect(stage.imageCount).toBe(1);
 	});
 	
-	it("fades an entire layer's opacity", function() {
+	it("fades an entire stage's opacity", function() {
 		runs(function() {
 			var scene = new Ambience.Scene();
 			scene.fadeDuration = 1000;
-			ambience.play(scene);
+			stage.play(scene);
 		});
 		
 		waits(500);
@@ -39,14 +36,14 @@ describe('Ambience layer', function() {
 		runs(function() {
 			// If CSS transitions are used, this has to be changed to getComputedStyle.
 			// We're using a fairly generous interval for the opacity.
-			expect(layer.opacity).toBeGreaterThan(0.25);
-			expect(layer.opacity).toBeLessThan(0.75);
+			expect(stage.opacity).toBeGreaterThan(0.25);
+			expect(stage.opacity).toBeLessThan(0.75);
 		});
 		
 		waits(1000);
 		
 		runs(function() {
-			expect(layer.opacity).toBeGreaterThan(0.9);
+			expect(stage.opacity).toBeGreaterThan(0.9);
 		});
 	});
 	
@@ -59,27 +56,27 @@ describe('Ambience layer', function() {
 			scene.sounds = ['test-audio.ogg'];
 			scene.text = 'Test';
 			
-			ambience.play(scene);
+			stage.play(scene);
 			
-			expect(layer.backgroundColor).toBe('red');
-			expect(layer.imageCount).toBe(1);
-			expect(layer.soundCount).toBe(1);
-			expect(layer.textCount).toBe(1);
+			expect(stage.backgroundColor).toBe('red');
+			expect(stage.imageCount).toBe(1);
+			expect(stage.soundCount).toBe(1);
+			expect(stage.textCount).toBe(1);
 		});
 		
 		waits(1500);
 		
 		runs(function() {
-			ambience.fadeOutBackground();
+			stage.fadeOut();
 		});
 		
 		waits(1500);
 		
 		runs(function() {
-			expect(layer.backgroundColor).toBe(Ambience.Scene.base.backgroundColor);
-			expect(layer.imageCount).toBe(0);
-			expect(layer.soundCount).toBe(0);
-			expect(layer.textCount).toBe(0);
+			expect(stage.backgroundColor).toBe(Ambience.Scene.base.backgroundColor);
+			expect(stage.imageCount).toBe(0);
+			expect(stage.soundCount).toBe(0);
+			expect(stage.textCount).toBe(0);
 		});
 	});
 });

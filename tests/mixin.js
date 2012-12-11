@@ -1,15 +1,11 @@
 describe('Ambience mixin', function() {
-	var ambience;
-	
-	var layer;
-	var layerNode;
+	var stage;
+	var stageNode;
 	
 	beforeEach(function() {
-		layerNode = document.createElement('div');
-		document.body.appendChild(layerNode);
-		layer = new Ambience.Layer(layerNode);
-		
-		ambience = new Ambience(layer, new Ambience.Layer(document.createElement('div')));
+		stageNode = document.createElement('div');
+		document.body.appendChild(stageNode);
+		stage = new Ambience.Stage(stageNode);
 	});
 	
 	beforeEach(function() {
@@ -24,53 +20,53 @@ describe('Ambience mixin', function() {
 	});
 	
 	afterEach(function() {
-		document.body.removeChild(layerNode);
+		document.body.removeChild(stageNode);
 	});
 	
 	it('replaces defined properties', function() {
 		var scene = new Ambience.Scene();
 		scene.text = 'Test';
-		ambience.play(scene);
+		stage.play(scene);
 		
 		var mixin = new Ambience.Scene();
 		mixin.isMixin = true;
 		mixin.text = 'Mixin';
-		ambience.play(mixin);
+		stage.play(mixin);
 		
-		expect(layer.textNode.textContent).toBe('Mixin');
+		expect(stage.textNode.textContent).toBe('Mixin');
 	});
 	
 	it('retains undefined properties', function() {
 		var scene = new Ambience.Scene();
 		scene.text = 'Test';
-		ambience.play(scene);
+		stage.play(scene);
 		
 		var mixin = new Ambience.Scene();
 		mixin.isMixin = true;
 		mixin.image = 'test-image.jpg';
-		ambience.play(mixin);
+		stage.play(mixin);
 		
-		expect(layer.textNode.textContent).toBe('Test');
-		expect(layer.imageNode.style.backgroundImage).toMatch(/test-image/);
+		expect(stage.textNode.textContent).toBe('Test');
+		expect(stage.imageNode.style.backgroundImage).toMatch(/test-image/);
 	});
 	
 	it('ignores fading when another scene is playing', function() {
 		runs(function() {
 			var scene = new Ambience.Scene();
 			scene.text = 'Test';
-			ambience.play(scene);
+			stage.play(scene);
 			
 			var mixin = new Ambience.Scene();
 			mixin.isMixin = true;
 			mixin.text = 'Mixin';
 			mixin.fadeDuration = 2000;
-			ambience.play(mixin);
+			stage.play(mixin);
 		});
 		
 		waits(1000);
 		
 		runs(function() {
-			expect(layer.opacity).toBeGreaterThan(0.9);
+			expect(stage.opacity).toBeGreaterThan(0.9);
 		});
 	});
 	
@@ -80,13 +76,13 @@ describe('Ambience mixin', function() {
 			mixin.isMixin = true;
 			mixin.text = 'Mixin';
 			mixin.fadeDuration = 2000;
-			ambience.play(mixin);
+			stage.play(mixin);
 		});
 		
 		waits(1000);
 		
 		runs(function() {
-			expect(layer.opacity).toBeBetween(0.25, 0.75);
+			expect(stage.opacity).toBeBetween(0.25, 0.75);
 		});
 	});
 	
@@ -95,7 +91,7 @@ describe('Ambience mixin', function() {
 			var base = new Ambience.Scene();
 			base.image = 'test-image.jpg';
 			base.fadeDuration = 2000;
-			ambience.play(base);
+			stage.play(base);
 		});
 		
 		waits(500);
@@ -104,13 +100,13 @@ describe('Ambience mixin', function() {
 			var mixin = new Ambience.Scene();
 			mixin.isMixin = true;
 			mixin.text = 'Mixin';
-			ambience.play(mixin);
+			stage.play(mixin);
 		});
 		
 		waits(500);
 		
 		runs(function() {
-			expect(layer.opacity).toBeBetween(0.25, 0.75);
+			expect(stage.opacity).toBeBetween(0.25, 0.75);
 		});
 	});
 	
@@ -119,7 +115,7 @@ describe('Ambience mixin', function() {
 			var base = new Ambience.Scene();
 			base.sounds = ['test-audio.ogg'];
 			base.fadeDuration = 2000;
-			ambience.play(base);
+			stage.play(base);
 		});
 		
 		waits(500);
@@ -128,13 +124,13 @@ describe('Ambience mixin', function() {
 			var mixin = new Ambience.Scene();
 			mixin.isMixin = true;
 			mixin.sounds = ['test-audio.ogg'];
-			ambience.play(mixin);
+			stage.play(mixin);
 		});
 		
 		waits(500);
 		
 		runs(function() {
-			expect(layer.soundNode.volume).toBeBetween(0.25, 0.75);
+			expect(stage.soundNode.volume).toBeBetween(0.25, 0.75);
 		});
 	});
 	
@@ -142,39 +138,39 @@ describe('Ambience mixin', function() {
 		var base = new Ambience.Scene();
 		base.text = 'Base';
 		base.textStyle = { color: 'red' }
-		ambience.play(base);
+		stage.play(base);
 		
 		var mixin = new Ambience.Scene();
 		mixin.isMixin = true;
 		mixin.textStyle = { color: 'blue' };
-		ambience.play(mixin);
+		stage.play(mixin);
 		
-		expect(layerNode.querySelector('.text.inner').style.color).toBe('red');
+		expect(stageNode.querySelector('.text.inner').style.color).toBe('red');
 	});
 	
 	it('keeps playing visual scene even after audio of mixed-in audio-only scene ends', function() {
 		runs(function() {
 			var scene = new Ambience.Scene();
 			scene.image = 'test-image.jpg';
-			ambience.play(scene);
+			stage.play(scene);
 			
 			var mixin = new Ambience.Scene();
 			mixin.isMixin = true;
 			mixin.sounds = ['test-audio-2s.ogg'];
 			mixin.loops = false;
-			ambience.play(mixin);
+			stage.play(mixin);
 		});
 		
 		waits(500);
 		
 		runs(function() {
-			expect(layer.soundCount).toBe(1);
+			expect(stage.soundCount).toBe(1);
 		});
 		
 		waits(3000);
 		
 		runs(function() {
-			expect(ambience.sceneIsPlaying).toBe(true);
+			expect(stage.sceneIsPlaying).toBe(true);
 		});
 	});
 	
@@ -182,14 +178,14 @@ describe('Ambience mixin', function() {
 		var scene = new Ambience.Scene();
 		scene.sounds = ['test-audio-2s.ogg'];
 		scene.loops = false;
-		ambience.play(scene);
+		stage.play(scene);
 		
 		var mixin = new Ambience.Scene();
 		mixin.isMixin = true;
 		mixin.image = 'test-image.jpg';
-		ambience.play(mixin);
+		stage.play(mixin);
 		
-		expect(layerNode.style.visibility).toBe('visible');
+		expect(stageNode.style.visibility).toBe('visible');
 	});
 	
 	it('respects volume of mixed-in scene', function() {
@@ -197,20 +193,20 @@ describe('Ambience mixin', function() {
 			var scene = new Ambience.Scene();
 			scene.sounds = ['test-audio-2s.ogg'];
 			scene.loops = false;
-			ambience.play(scene);
+			stage.play(scene);
 			
 			var mixin = new Ambience.Scene();
 			mixin.isMixin = true;
 			mixin.sounds = ['test-audio-2s.ogg'];
 			mixin.volume = 0.5;
 			mixin.loops = false;
-			ambience.play(mixin);
+			stage.play(mixin);
 		});
 		
 		waits(500);
 		
 		runs(function() {
-			expect(layer.soundNode.volume).toBeBetween(0.45, 0.55);
+			expect(stage.soundNode.volume).toBeBetween(0.45, 0.55);
 		});
 	});
 });
