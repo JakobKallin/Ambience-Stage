@@ -10,7 +10,7 @@ Ambience.Scene.base = {
 	crossoverDuration: 0,
 	soundOrder: 'linear',
 	loops: true,
-	backgroundColor: 'black',
+	background: 'black',
 	volume: 1,
 	get isVisual() {
 		return (

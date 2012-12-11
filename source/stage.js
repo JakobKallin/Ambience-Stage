@@ -21,7 +21,7 @@ Ambience.Stage = function(node) {
 	};
 	
 	var mediaPlayers = {
-		'backgroundColor': new Ambience.Background(node),
+		'background': new Ambience.Background(node),
 		'image': new Ambience.Image(node),
 		'sounds': new Ambience.SoundList(node, stopSceneIfSoundOnly, includeInFade, removeFromFade),
 		'text': new Ambience.Text(node)

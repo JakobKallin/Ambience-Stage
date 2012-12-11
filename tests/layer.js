@@ -51,14 +51,14 @@ describe('Ambience stage', function() {
 		runs(function() {
 			var scene = new Ambience.Scene();
 			scene.fadeDuration = 1000;
-			scene.backgroundColor = 'red';
+			scene.background = 'red';
 			scene.image = 'test-image.jpg';
 			scene.sounds = ['test-audio.ogg'];
 			scene.text = 'Test';
 			
 			stage.play(scene);
 			
-			expect(stage.backgroundColor).toBe('red');
+			expect(stage.background).toBe('red');
 			expect(stage.imageCount).toBe(1);
 			expect(stage.soundCount).toBe(1);
 			expect(stage.textCount).toBe(1);
@@ -73,7 +73,7 @@ describe('Ambience stage', function() {
 		waits(1500);
 		
 		runs(function() {
-			expect(stage.backgroundColor).toBe(Ambience.Scene.base.backgroundColor);
+			expect(stage.background).toBe(Ambience.Scene.base.background);
 			expect(stage.imageCount).toBe(0);
 			expect(stage.soundCount).toBe(0);
 			expect(stage.textCount).toBe(0);

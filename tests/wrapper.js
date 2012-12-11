@@ -44,9 +44,9 @@
 			}
 		});
 		
-		Object.defineProperty(stage, 'backgroundColor', {
+		Object.defineProperty(stage, 'background', {
 			get: function() {
-				return node.style.backgroundColor;
+				return node.style.background;
 			}
 		});
 		
