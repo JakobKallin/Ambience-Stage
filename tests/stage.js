@@ -53,7 +53,7 @@ describe('Ambience stage', function() {
 			scene.fadeDuration = 1000;
 			scene.background = 'red';
 			scene.image = 'test-image.jpg';
-			scene.sounds = ['test-audio.ogg'];
+			scene.sound = ['test-audio.ogg'];
 			scene.text = 'Test';
 			
 			stage.play(scene);

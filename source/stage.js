@@ -23,7 +23,7 @@ Ambience.Stage = function(node) {
 	var mediaPlayers = {
 		'background': new Ambience.Background(node),
 		'image': new Ambience.Image(node),
-		'sounds': new Ambience.SoundList(node, stopSceneIfSoundOnly, includeInFade, removeFromFade),
+		'sound': new Ambience.SoundList(node, stopSceneIfSoundOnly, includeInFade, removeFromFade),
 		'text': new Ambience.Text(node)
 	};
 	
@@ -48,7 +48,7 @@ Ambience.Stage = function(node) {
 	
 	function stopSceneIfSoundOnly() {
 		// The 2 below is because there might be a background color as well.
-		if ( playingMedia.contains('sounds') && playingMedia.length <= 2 ) {
+		if ( playingMedia.contains('sound') && playingMedia.length <= 2 ) {
 			stop();
 		}
 	}

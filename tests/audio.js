@@ -16,7 +16,7 @@ describe('Ambience audio', function() {
 		runs(function() {
 			var scene = new Ambience.Scene();
 			scene.fadeDuration = 1000;
-			scene.sounds = ['test-audio.ogg'];
+			scene.sound = ['test-audio.ogg'];
 			stage.play(scene);
 		});
 		
@@ -39,7 +39,7 @@ describe('Ambience audio', function() {
 	it('stops non-looping audio-only scenes when audio ends', function() {
 		runs(function() {
 			var scene = new Ambience.Scene();
-			scene.sounds = ['test-audio-2s.ogg'];
+			scene.sound = ['test-audio-2s.ogg'];
 			scene.loops = false;
 			
 			stage.play(scene);
@@ -62,7 +62,7 @@ describe('Ambience audio', function() {
 		runs(function() {
 			var scene = new Ambience.Scene();
 			scene.image = 'test-image.jpg';
-			scene.sounds = ['test-audio-2s.ogg'];
+			scene.sound = ['test-audio-2s.ogg'];
 			scene.loops = false;
 			
 			stage.play(scene);
@@ -79,7 +79,7 @@ describe('Ambience audio', function() {
 		runs(function() {
 			var scene = new Ambience.Scene();
 			scene.crossoverDuration = 2;
-			scene.sounds = ['test-audio-5s.ogg', 'test-audio-5s.ogg'];
+			scene.sound = ['test-audio-5s.ogg', 'test-audio-5s.ogg'];
 			scene.loops = false;
 			stage.play(scene);
 		});
@@ -109,7 +109,7 @@ describe('Ambience audio', function() {
 		runs(function() {
 			var scene = new Ambience.Scene();
 			scene.crossoverDuration = 6;
-			scene.sounds = ['test-audio-10s.ogg', 'test-audio-5s.ogg', 'test-audio-10s.ogg'];
+			scene.sound = ['test-audio-10s.ogg', 'test-audio-5s.ogg', 'test-audio-10s.ogg'];
 			stage.play(scene);
 		});
 		
@@ -136,7 +136,7 @@ describe('Ambience audio', function() {
 	it('respects fade level when a new track is started during fade', function() {
 		runs(function() {
 			var scene = new Ambience.Scene();
-			scene.sounds = ['test-audio-5s.ogg', 'test-audio-5s.ogg'];
+			scene.sound = ['test-audio-5s.ogg', 'test-audio-5s.ogg'];
 			scene.fadeDuration = 10000;
 			scene.fadesIn = false;
 			stage.play(scene);

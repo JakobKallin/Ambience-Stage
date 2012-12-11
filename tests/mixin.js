@@ -113,7 +113,7 @@ describe('Ambience mixin', function() {
 	it('respects current audio fade level when mixed-in during fade', function() {
 		runs(function() {
 			var base = new Ambience.Scene();
-			base.sounds = ['test-audio.ogg'];
+			base.sound = ['test-audio.ogg'];
 			base.fadeDuration = 2000;
 			stage.play(base);
 		});
@@ -123,7 +123,7 @@ describe('Ambience mixin', function() {
 		runs(function() {
 			var mixin = new Ambience.Scene();
 			mixin.isMixin = true;
-			mixin.sounds = ['test-audio.ogg'];
+			mixin.sound = ['test-audio.ogg'];
 			stage.play(mixin);
 		});
 		
@@ -156,7 +156,7 @@ describe('Ambience mixin', function() {
 			
 			var mixin = new Ambience.Scene();
 			mixin.isMixin = true;
-			mixin.sounds = ['test-audio-2s.ogg'];
+			mixin.sound = ['test-audio-2s.ogg'];
 			mixin.loops = false;
 			stage.play(mixin);
 		});
@@ -176,7 +176,7 @@ describe('Ambience mixin', function() {
 	
 	it('displays visual mixin even when previous scene was not visual', function() {
 		var scene = new Ambience.Scene();
-		scene.sounds = ['test-audio-2s.ogg'];
+		scene.sound = ['test-audio-2s.ogg'];
 		scene.loops = false;
 		stage.play(scene);
 		
@@ -191,13 +191,13 @@ describe('Ambience mixin', function() {
 	it('respects volume of mixed-in scene', function() {
 		runs(function() {
 			var scene = new Ambience.Scene();
-			scene.sounds = ['test-audio-2s.ogg'];
+			scene.sound = ['test-audio-2s.ogg'];
 			scene.loops = false;
 			stage.play(scene);
 			
 			var mixin = new Ambience.Scene();
 			mixin.isMixin = true;
-			mixin.sounds = ['test-audio-2s.ogg'];
+			mixin.sound = ['test-audio-2s.ogg'];
 			mixin.volume = 0.5;
 			mixin.loops = false;
 			stage.play(mixin);

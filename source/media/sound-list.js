@@ -1,7 +1,7 @@
 Ambience.SoundList = function(container, stopSceneIfSoundOnly, includeInFade, removeFromFade) {
 	var scene;
 	var trackIndex;
-	var sounds = [];
+	var tracks = [];
 	
 	function play(newScene) {
 		scene = newScene;
@@ -15,9 +15,9 @@ Ambience.SoundList = function(container, stopSceneIfSoundOnly, includeInFade, re
 		var hasPlayedBefore = trackIndex !== -1;
 		
 		if ( scene.soundOrder === 'random' ) {
-			trackIndex = scene.sounds.randomIndex();
+			trackIndex = scene.sound.randomIndex();
 		} else {
-			trackIndex = (trackIndex + 1) % scene.sounds.length;
+			trackIndex = (trackIndex + 1) % scene.sound.length;
 		}
 		
 		var allTracksHavePlayed = hasPlayedBefore && trackIndex === 0;
@@ -26,18 +26,18 @@ Ambience.SoundList = function(container, stopSceneIfSoundOnly, includeInFade, re
 		if ( oneShot && allTracksHavePlayed ) {
 			stopSceneIfSoundOnly();
 		} else if ( scene.loops || !allTracksHavePlayed ) {
-			var trackPath = scene.sounds[trackIndex];
-			var sound = new Ambience.Sound(trackPath, container, scene.volume, includeInFade, removeFromFade);
-			var onEnded = [function() { removeSound(sound); }, playNextTrack];
+			var trackPath = scene.sound[trackIndex];
+			var track = new Ambience.Track(trackPath, container, scene.volume, includeInFade, removeFromFade);
+			var onEnded = [function() { removeTrack(track); }, playNextTrack];
 			
-			sound.play({ onTimeUpdate: onTimeUpdate, onEnded: onEnded });
-			sounds.push(sound);
+			track.play({ onTimeUpdate: onTimeUpdate, onEnded: onEnded });
+			tracks.push(track);
 		}
 	}
 	
 	function stop() {
-		sounds.map(function(sound) { sound.stop(); });
-		sounds = [];
+		tracks.map(function(track) { track.stop(); });
+		tracks = [];
 		scene = null;
 	}
 	
@@ -56,10 +56,10 @@ Ambience.SoundList = function(container, stopSceneIfSoundOnly, includeInFade, re
 	}
 	
 	// We should remove tracks from the list once they are done, so they don't take up space.
-	function removeSound(sound) {
-		sound.stop(); // This is important because it removes the <audio> element.
-		var index = sounds.indexOf(sound);
-		sounds.splice(index, 1);
+	function removeTrack(track) {
+		track.stop(); // This is important because it removes the <audio> element.
+		var index = tracks.indexOf(track);
+		tracks.splice(index, 1);
 	}
 	
 	return {

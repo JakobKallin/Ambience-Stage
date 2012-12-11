@@ -19,7 +19,7 @@ Ambience.Scene.base = {
 		);
 	},
 	get hasOnlySound() {
-		return this.sounds && !this.isVisual;
+		return this.sound && !this.isVisual;
 	},
 	get fadeInDuration() {
 		if ( this.fadesIn ) {
