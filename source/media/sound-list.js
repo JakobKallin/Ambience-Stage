@@ -1,4 +1,4 @@
-Ambience.SoundList = function(container, stopSceneIfSoundOnly, includeInFade, removeFromFade) {
+AmbienceStage.SoundList = function(container, stopSceneIfSoundOnly, includeInFade, removeFromFade) {
 	var scene;
 	var trackIndex;
 	var tracks = [];
@@ -27,7 +27,7 @@ Ambience.SoundList = function(container, stopSceneIfSoundOnly, includeInFade, re
 			stopSceneIfSoundOnly();
 		} else if ( scene.loops || !allTracksHavePlayed ) {
 			var trackPath = scene.sound[trackIndex];
-			var track = new Ambience.Track(trackPath, container, scene.volume, includeInFade, removeFromFade);
+			var track = new AmbienceStage.Track(trackPath, container, scene.volume, includeInFade, removeFromFade);
 			var onEnded = [function() { removeTrack(track); }, playNextTrack];
 			
 			track.play({ onTimeUpdate: onTimeUpdate, onEnded: onEnded });

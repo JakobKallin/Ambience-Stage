@@ -1,4 +1,4 @@
-Ambience.Text = function(container) {
+AmbienceStage.Text = function(container) {
 	var outerNode; // This one is needed to have left-aligned text in the center, without filling the entire width.
 	var innerNode;
 	

@@ -5,7 +5,7 @@ describe('Ambience stage', function() {
 	beforeEach(function() {
 		stageNode = document.createElement('div');
 		document.body.appendChild(stageNode);
-		stage = new Ambience.Stage(stageNode);
+		stage = new AmbienceStage.Stage(stageNode);
 	});
 	
 	afterEach(function() {
@@ -13,11 +13,11 @@ describe('Ambience stage', function() {
 	});
 	
 	it('stops any old scene when playing a new scene', function() {
-		var scene = new Ambience.Scene();
+		var scene = new AmbienceStage.Scene();
 		scene.image = 'test-image.jpg';
 		stage.play(scene);
 		
-		var newScene = new Ambience.Scene();
+		var newScene = new AmbienceStage.Scene();
 		scene.image = 'test-image.jpg';
 		stage.play(scene);
 		
@@ -26,7 +26,7 @@ describe('Ambience stage', function() {
 	
 	it("fades an entire stage's opacity", function() {
 		runs(function() {
-			var scene = new Ambience.Scene();
+			var scene = new AmbienceStage.Scene();
 			scene.fadeDuration = 1000;
 			stage.play(scene);
 		});
@@ -49,7 +49,7 @@ describe('Ambience stage', function() {
 	
 	it('stops all layers after fading out', function() {
 		runs(function() {
-			var scene = new Ambience.Scene();
+			var scene = new AmbienceStage.Scene();
 			scene.fadeDuration = 1000;
 			scene.background = 'red';
 			scene.image = 'test-image.jpg';
@@ -73,7 +73,7 @@ describe('Ambience stage', function() {
 		waits(1500);
 		
 		runs(function() {
-			expect(stage.background).toBe(Ambience.Scene.base.background);
+			expect(stage.background).toBe(AmbienceStage.Scene.base.background);
 			expect(stage.imageCount).toBe(0);
 			expect(stage.soundCount).toBe(0);
 			expect(stage.textCount).toBe(0);

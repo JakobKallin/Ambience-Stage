@@ -1,6 +1,6 @@
-var Ambience = {};
+var AmbienceStage = {};
 
-Ambience.Stage = function(node) {
+AmbienceStage.Stage = function(node) {
 	var fadeOutDuration;
 	var fade = null;
 	var isFadingOut = false;
@@ -21,10 +21,10 @@ Ambience.Stage = function(node) {
 	};
 	
 	var mediaPlayers = {
-		'background': new Ambience.Background(node),
-		'image': new Ambience.Image(node),
-		'sound': new Ambience.SoundList(node, stopSceneIfSoundOnly, includeInFade, removeFromFade),
-		'text': new Ambience.Text(node)
+		'background': new AmbienceStage.Background(node),
+		'image': new AmbienceStage.Image(node),
+		'sound': new AmbienceStage.SoundList(node, stopSceneIfSoundOnly, includeInFade, removeFromFade),
+		'text': new AmbienceStage.Text(node)
 	};
 	
 	var playingMedia = [];

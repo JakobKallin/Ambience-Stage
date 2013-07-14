@@ -1,4 +1,4 @@
-Ambience.Track = function(path, container, maxVolume, includeInFade, removeFromFade) {
+AmbienceStage.Track = function(path, container, maxVolume, includeInFade, removeFromFade) {
 	var node = document.createElement('audio');
 	node.src = path;
 	node.volume = maxVolume;

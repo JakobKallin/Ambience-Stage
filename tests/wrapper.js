@@ -1,6 +1,6 @@
 (function() {
-	var OldStage = Ambience.Stage;
-	Ambience.Stage = function(node) {
+	var OldStage = AmbienceStage.Stage;
+	AmbienceStage.Stage = function(node) {
 		var stage = new OldStage(node);
 		
 		Object.defineProperty(stage, 'imageNode', {

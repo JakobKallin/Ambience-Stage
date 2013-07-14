@@ -5,7 +5,7 @@ describe('Ambience audio', function() {
 	beforeEach(function() {
 		stageNode = document.createElement('div');
 		document.body.appendChild(stageNode);
-		stage = new Ambience.Stage(stageNode);
+		stage = new AmbienceStage.Stage(stageNode);
 	});
 	
 	afterEach(function() {
@@ -14,7 +14,7 @@ describe('Ambience audio', function() {
 	
 	it('fades audio volume', function() {
 		runs(function() {
-			var scene = new Ambience.Scene();
+			var scene = new AmbienceStage.Scene();
 			scene.fadeDuration = 1000;
 			scene.sound = ['test-audio.ogg'];
 			stage.play(scene);
@@ -38,7 +38,7 @@ describe('Ambience audio', function() {
 	
 	it('stops non-looping audio-only scenes when audio ends', function() {
 		runs(function() {
-			var scene = new Ambience.Scene();
+			var scene = new AmbienceStage.Scene();
 			scene.sound = ['test-audio-2s.ogg'];
 			scene.loops = false;
 			
@@ -60,7 +60,7 @@ describe('Ambience audio', function() {
 	
 	it('removes audio element when audio ends', function() {
 		runs(function() {
-			var scene = new Ambience.Scene();
+			var scene = new AmbienceStage.Scene();
 			scene.image = 'test-image.jpg';
 			scene.sound = ['test-audio-2s.ogg'];
 			scene.loops = false;
@@ -77,7 +77,7 @@ describe('Ambience audio', function() {
 	
 	it('crosses over', function() {
 		runs(function() {
-			var scene = new Ambience.Scene();
+			var scene = new AmbienceStage.Scene();
 			scene.crossoverDuration = 2;
 			scene.sound = ['test-audio-5s.ogg', 'test-audio-5s.ogg'];
 			scene.loops = false;
@@ -107,7 +107,7 @@ describe('Ambience audio', function() {
 	/*
 	it('crosses over at most half of audio length', function() {
 		runs(function() {
-			var scene = new Ambience.Scene();
+			var scene = new AmbienceStage.Scene();
 			scene.crossoverDuration = 6;
 			scene.sound = ['test-audio-10s.ogg', 'test-audio-5s.ogg', 'test-audio-10s.ogg'];
 			stage.play(scene);
@@ -135,7 +135,7 @@ describe('Ambience audio', function() {
 	
 	it('respects fade level when a new track is started during fade', function() {
 		runs(function() {
-			var scene = new Ambience.Scene();
+			var scene = new AmbienceStage.Scene();
 			scene.sound = ['test-audio-5s.ogg', 'test-audio-5s.ogg'];
 			scene.fadeDuration = 10000;
 			scene.fadesIn = false;

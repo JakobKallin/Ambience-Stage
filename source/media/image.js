@@ -1,4 +1,4 @@
-Ambience.Image = function(container) {
+AmbienceStage.Image = function(container) {
 	var node;
 	
 	function play(scene) {

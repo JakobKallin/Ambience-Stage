@@ -1,8 +1,8 @@
-Ambience.Scene = function() {
-	return Object.create(Ambience.Scene.base);
+AmbienceStage.Scene = function() {
+	return Object.create(AmbienceStage.Scene.base);
 };
 
-Ambience.Scene.base = {
+AmbienceStage.Scene.base = {
 	layer: 'background',
 	fadeDuration: 0,
 	fadesIn: true,
