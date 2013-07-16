@@ -1,3 +1,7 @@
+// This file is part of Ambience Stage
+// Copyright 2012 Jakob Kallin
+// License: GNU GPL (http://www.gnu.org/licenses/gpl-3.0.txt)
+
 describe('Ambience mixin', function() {
 	var stage;
 	var stageNode;
@@ -5,7 +9,7 @@ describe('Ambience mixin', function() {
 	beforeEach(function() {
 		stageNode = document.createElement('div');
 		document.body.appendChild(stageNode);
-		stage = new AmbienceStage.Stage(stageNode);
+		stage = new AmbienceStage.DebugStage(stageNode);
 	});
 	
 	beforeEach(function() {
@@ -24,43 +28,40 @@ describe('Ambience mixin', function() {
 	});
 	
 	it('replaces defined properties', function() {
-		var scene = new AmbienceStage.Scene();
-		scene.text = 'Test';
+		var scene = new AmbienceStage.Scene(['Text']);
+		scene.text.string = 'Test';
 		stage.play(scene);
 		
-		var mixin = new AmbienceStage.Scene();
-		mixin.isMixin = true;
-		mixin.text = 'Mixin';
-		stage.play(mixin);
+		var mixin = new AmbienceStage.Scene(['Text']);
+		mixin.text.string = 'Mixin';
+		stage.mixin(mixin);
 		
 		expect(stage.textNode.textContent).toBe('Mixin');
 	});
 	
 	it('retains undefined properties', function() {
-		var scene = new AmbienceStage.Scene();
-		scene.text = 'Test';
+		var scene = new AmbienceStage.Scene(['Text']);
+		scene.text.string = 'Test';
 		stage.play(scene);
 		
-		var mixin = new AmbienceStage.Scene();
-		mixin.isMixin = true;
-		mixin.image = 'test-image.jpg';
-		stage.play(mixin);
+		var mixin = new AmbienceStage.Scene(['Image']);
+		mixin.image.url = 'test-image.jpg';
+		stage.mixin(mixin);
 		
 		expect(stage.textNode.textContent).toBe('Test');
 		expect(stage.imageNode.style.backgroundImage).toMatch(/test-image/);
 	});
 	
-	it('ignores fading when another scene is playing', function() {
+	it('ignores fading when a scene is already playing', function() {
 		runs(function() {
-			var scene = new AmbienceStage.Scene();
-			scene.text = 'Test';
+			var scene = new AmbienceStage.Scene(['Text']);
+			scene.text.string = 'Test';
 			stage.play(scene);
 			
-			var mixin = new AmbienceStage.Scene();
-			mixin.isMixin = true;
-			mixin.text = 'Mixin';
-			mixin.fadeDuration = 2000;
-			stage.play(mixin);
+			var mixin = new AmbienceStage.Scene(['Text']);
+			mixin.text.string = 'Mixin';
+			mixin.fade.in = 2000;
+			stage.mixin(mixin);
 		});
 		
 		waits(1000);
@@ -70,13 +71,12 @@ describe('Ambience mixin', function() {
 		});
 	});
 	
-	it('respects fading when another scene is not playing', function() {
+	it('respects fading when a scene is not already playing', function() {
 		runs(function() {
-			var mixin = new AmbienceStage.Scene();
-			mixin.isMixin = true;
-			mixin.text = 'Mixin';
-			mixin.fadeDuration = 2000;
-			stage.play(mixin);
+			var mixin = new AmbienceStage.Scene(['Text']);
+			mixin.text.string = 'Mixin';
+			mixin.fade.in = 2000;
+			stage.mixin(mixin);
 		});
 		
 		waits(1000);
@@ -86,21 +86,20 @@ describe('Ambience mixin', function() {
 		});
 	});
 	
-	it('respects current visual fade level when mixed-in during fade', function() {
+	it('respects opacity when mixed-in during fade', function() {
 		runs(function() {
-			var base = new AmbienceStage.Scene();
-			base.image = 'test-image.jpg';
-			base.fadeDuration = 2000;
+			var base = new AmbienceStage.Scene(['Image']);
+			base.image.url = 'test-image.jpg';
+			base.fade.in = 2000;
 			stage.play(base);
 		});
 		
 		waits(500);
 		
 		runs(function() {
-			var mixin = new AmbienceStage.Scene();
-			mixin.isMixin = true;
-			mixin.text = 'Mixin';
-			stage.play(mixin);
+			var mixin = new AmbienceStage.Scene(['Text']);
+			mixin.text.string = 'Mixin';
+			stage.mixin(mixin);
 		});
 		
 		waits(500);
@@ -110,21 +109,20 @@ describe('Ambience mixin', function() {
 		});
 	});
 	
-	it('respects current audio fade level when mixed-in during fade', function() {
+	it('respects volume when mixed-in during fade', function() {
 		runs(function() {
-			var base = new AmbienceStage.Scene();
-			base.sound = ['test-audio.ogg'];
-			base.fadeDuration = 2000;
+			var base = new AmbienceStage.Scene(['Sound']);
+			base.sound.tracks = ['test-audio.ogg'];
+			base.fade.in = 2000;
 			stage.play(base);
 		});
 		
 		waits(500);
 		
 		runs(function() {
-			var mixin = new AmbienceStage.Scene();
-			mixin.isMixin = true;
-			mixin.sound = ['test-audio.ogg'];
-			stage.play(mixin);
+			var mixin = new AmbienceStage.Scene(['Sound']);
+			mixin.sound.tracks = ['test-audio.ogg'];
+			stage.mixin(mixin);
 		});
 		
 		waits(500);
@@ -134,31 +132,16 @@ describe('Ambience mixin', function() {
 		});
 	});
 	
-	it('only mixes in properties of media when media itself is present', function() {
-		var base = new AmbienceStage.Scene();
-		base.text = 'Base';
-		base.textStyle = { color: 'red' }
-		stage.play(base);
-		
-		var mixin = new AmbienceStage.Scene();
-		mixin.isMixin = true;
-		mixin.textStyle = { color: 'blue' };
-		stage.play(mixin);
-		
-		expect(stageNode.querySelector('.text.inner').style.color).toBe('red');
-	});
-	
-	it('keeps playing visual scene even after audio of mixed-in audio-only scene ends', function() {
+	it('keeps playing visual scene even after audio of mixed-in one-shot audio scene ends', function() {
 		runs(function() {
-			var scene = new AmbienceStage.Scene();
-			scene.image = 'test-image.jpg';
+			var scene = new AmbienceStage.Scene(['Image']);
+			scene.image.url = 'test-image.jpg';
 			stage.play(scene);
 			
-			var mixin = new AmbienceStage.Scene();
-			mixin.isMixin = true;
-			mixin.sound = ['test-audio-2s.ogg'];
-			mixin.loops = false;
-			stage.play(mixin);
+			var mixin = new AmbienceStage.Scene(['Sound']);
+			mixin.sound.tracks = ['test-audio-2s.ogg'];
+			mixin.sound.loop = false;
+			stage.mixin(mixin);
 		});
 		
 		waits(500);
@@ -175,32 +158,30 @@ describe('Ambience mixin', function() {
 	});
 	
 	it('displays visual mixin even when previous scene was not visual', function() {
-		var scene = new AmbienceStage.Scene();
-		scene.sound = ['test-audio-2s.ogg'];
-		scene.loops = false;
+		var scene = new AmbienceStage.Scene(['Sound']);
+		scene.sound.tracks = ['test-audio-2s.ogg'];
+		scene.sound.loop = false;
 		stage.play(scene);
 		
-		var mixin = new AmbienceStage.Scene();
-		mixin.isMixin = true;
-		mixin.image = 'test-image.jpg';
-		stage.play(mixin);
+		var mixin = new AmbienceStage.Scene(['Image']);
+		mixin.image.url = 'test-image.jpg';
+		stage.mixin(mixin);
 		
 		expect(stageNode.style.visibility).toBe('visible');
 	});
 	
 	it('respects volume of mixed-in scene', function() {
 		runs(function() {
-			var scene = new AmbienceStage.Scene();
-			scene.sound = ['test-audio-2s.ogg'];
-			scene.loops = false;
+			var scene = new AmbienceStage.Scene(['Sound']);
+			scene.sound.tracks = ['test-audio-2s.ogg'];
+			scene.sound.loop = false;
 			stage.play(scene);
 			
-			var mixin = new AmbienceStage.Scene();
-			mixin.isMixin = true;
-			mixin.sound = ['test-audio-2s.ogg'];
-			mixin.volume = 0.5;
-			mixin.loops = false;
-			stage.play(mixin);
+			var mixin = new AmbienceStage.Scene(['Sound']);
+			mixin.sound.tracks = ['test-audio-2s.ogg'];
+			mixin.sound.volume = 0.5;
+			mixin.sound.loop = false;
+			stage.mixin(mixin);
 		});
 		
 		waits(500);

@@ -1,6 +1,7 @@
 window.requestAnimationFrame =
 	window.webkitRequestAnimationFrame ||
-	window.mozRequestAnimationFrame;
+	window.mozRequestAnimationFrame ||
+	window.msRequestAnimationFrame;
 
 var Manymation = {};
 
@@ -33,6 +34,7 @@ Manymation.Animation = function(duration, onEnded, targets) {
 			targets.map(function(target) {
 				update(target, progress(elapsedTime));
 			});
+			
 			window.requestAnimationFrame(tick);
 		}
 	};
@@ -73,6 +75,14 @@ Manymation.Animation = function(duration, onEnded, targets) {
 		targets.map(function(target) {
 			update(target, 1);
 		});
+	};
+
+	var cancel = function() {
+		if ( hasEnded ) {
+			return;
+		};
+
+		hasEnded = true;
 	};
 	
 	var Target = function(object, property, startValue, endValue) {
@@ -142,6 +152,7 @@ Manymation.Animation = function(duration, onEnded, targets) {
 		track: track,
 		targets: targets,
 		start: start,
-		complete: complete
+		complete: complete,
+		cancel: cancel
 	};
 };

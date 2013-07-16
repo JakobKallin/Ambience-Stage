@@ -1,3 +1,7 @@
+// This file is part of Ambience Stage
+// Copyright 2012-2013 Jakob Kallin
+// License: GNU GPL (http://www.gnu.org/licenses/gpl-3.0.txt)
+
 AmbienceStage.Image = function(container) {
 	var node;
 	
@@ -5,11 +9,11 @@ AmbienceStage.Image = function(container) {
 		node = document.createElement('div');
 		node.className = 'image';
 		container.insertBefore(node, container.firstChild);
-	
-		node.style.backgroundImage = 'url("' + scene.image + '")';
+
+		node.style.backgroundImage = 'url("' + scene.image.url + '")';
 		
-		for ( var property in scene.imageStyle ) {
-			var value = scene.imageStyle[property];
+		for ( var property in scene.image.style ) {
+			var value = scene.image.style[property];
 			node.style[property] = value;
 		}
 	}

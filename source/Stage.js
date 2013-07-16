@@ -1,9 +1,11 @@
-var AmbienceStage = {};
+// This file is part of Ambience Stage
+// Copyright 2012-2013 Jakob Kallin
+// License: GNU GPL (http://www.gnu.org/licenses/gpl-3.0.txt)
 
-AmbienceStage.Stage = function(node) {
-	var fadeOutDuration;
+var AmbienceStage = function(node) {
 	var fade = null;
 	var isFadingOut = false;
+	var scene = null
 	
 	var includeInFade = function(object, property, startValue, endValue) {
 		if ( isFadingOut ) {
@@ -23,107 +25,105 @@ AmbienceStage.Stage = function(node) {
 	var mediaPlayers = {
 		'background': new AmbienceStage.Background(node),
 		'image': new AmbienceStage.Image(node),
-		'sound': new AmbienceStage.SoundList(node, stopSceneIfSoundOnly, includeInFade, removeFromFade),
+		'sound': new AmbienceStage.Sound(node, stopSceneIfSoundOnly, includeInFade, removeFromFade),
 		'text': new AmbienceStage.Text(node)
 	};
-	
-	var playingMedia = [];
-	
+
 	stop();
 	
 	function stop() {
+		if ( scene === null ) {
+			return;
+		}
+
 		for ( var mediaType in mediaPlayers ) {
-			if ( playingMedia.contains(mediaType) ) {
+			if ( mediaType in scene ) {
 				mediaPlayers[mediaType].stop();
-				playingMedia.remove(mediaType);
 			}
 		}
 		
-		stopFade();
+		if ( fade ) {
+			fade.cancel();
+			fade = null;
+		}
+		isFadingOut = false;
 		
 		node.style.visibility = 'hidden';
 		node.style.opacity = 0;
-		fadeOutDuration = 0;
+		scene = null;
 	}
 	
 	function stopSceneIfSoundOnly() {
-		// The 2 below is because there might be a background color as well.
-		if ( playingMedia.contains('sound') && playingMedia.length <= 2 ) {
+		if ( scene.hasOnlySound ) {
 			stop();
 		}
 	}
 	
-	function play(scene) {
-		var alreadyPlaying = playingMedia.length > 0;
-		if ( alreadyPlaying && scene.isMixin ) {
-			playMixin(scene);
-		} else {
-			playRegularScene(scene);
-		}
-	}
-	
-	function playRegularScene(scene) {
+	function play(newScene) {
 		stop();
-		
-		fadeOutDuration = scene.fadeOutDuration;
+
+		scene = newScene;
 		playFadeIn(scene);
 		
 		for ( var mediaType in mediaPlayers ) {
-			if ( scene[mediaType] ) {
+			if ( mediaType in scene ) {
 				mediaPlayers[mediaType].play(scene);
-				playingMedia.push(mediaType);
 			}
 		}
 	}
-	
-	function playMixin(mixin) {
+
+	function mixin(mixin) {
+		var alreadyPlaying = scene !== null;
+		if ( !alreadyPlaying ) {
+			play(mixin);
+			return;
+		}
+		
+		var newScene = Object.create(scene);
+		for ( var property in mixin ) {
+			newScene[property] = mixin[property];
+		}
+
+		for ( var mediaType in mediaPlayers ) {
+			if ( mediaType in scene && mediaType in mixin ) {
+				mediaPlayers[mediaType].stop();
+			}
+		}
+
+		for ( var mediaType in mediaPlayers ) {
+			if ( mediaType in mixin ) {
+				mediaPlayers[mediaType].play(newScene);
+			}
+		}
+
 		if ( mixin.isVisual ) {
 			node.style.visibility = 'visible';
 		}
-		
-		for ( var mediaType in mediaPlayers ) {
-			if ( playingMedia.contains(mediaType) && mixin[mediaType] ) {
-				mediaPlayers[mediaType].stop();
-				playingMedia.remove(mediaType);
-			}
-		}
-		
-		for ( var mediaType in mediaPlayers ) {
-			if ( mixin[mediaType] ) {
-				mediaPlayers[mediaType].play(mixin);
-				playingMedia.push(mediaType);
-			}
-		}
+
+		scene = newScene;
 	}
-	
+
 	function playFadeIn(scene) {
 		if ( scene.isVisual ) {
 			node.style.visibility = 'visible';
 		}
-		
 		var targets = (fade) ? fade.targets : undefined;
-		fade = new Manymation.Animation(scene.fadeInDuration, undefined, targets);
+		fade = new Manymation.Animation(scene.fade.in, undefined, targets);
 		includeInFade(node.style, 'opacity', 0, 0.999)
 		fade.start();
-	}
-	
-	function stopFade() {
-		isFadingOut = false;
-		if ( fade ) {
-			fade.complete();
-			fade = null;
-		}
 	}
 	
 	function fadeOut() {
 		if ( isFadingOut ) {
 			stop();
 		} else {
-			isFadingOut = true;
-			
-			fade.complete();
+			fade.cancel();
 			reverseTargets(fade.targets);
-			fade = new Manymation.Animation(fadeOutDuration, stop, fade.targets);
+			fade = new Manymation.Animation(scene.fade.out, stop, fade.targets);
+			
+			// This needs to be set before starting the fade, because it might be instantaneous.
+			// If it is, isFadingOut will be true even though the stage is not fading out.
+			isFadingOut = true;
 			fade.start();
 		}
 	}
@@ -139,10 +139,11 @@ AmbienceStage.Stage = function(node) {
 	
 	return {
 		play: play,
+		mixin: mixin,
 		stop: stop,
 		fadeOut: fadeOut,
 		get sceneIsPlaying() {
-			return playingMedia.length > 0;
+			return scene !== null;
 		}
 	};
 };

@@ -1,3 +1,7 @@
+// This file is part of Ambience Stage
+// Copyright 2012 Jakob Kallin
+// License: GNU GPL (http://www.gnu.org/licenses/gpl-3.0.txt)
+
 describe('Ambience stage', function() {
 	var stage;
 	var stageNode;
@@ -5,29 +9,29 @@ describe('Ambience stage', function() {
 	beforeEach(function() {
 		stageNode = document.createElement('div');
 		document.body.appendChild(stageNode);
-		stage = new AmbienceStage.Stage(stageNode);
+		stage = new AmbienceStage.DebugStage(stageNode);
 	});
 	
 	afterEach(function() {
 		document.body.removeChild(stageNode);
 	});
 	
-	it('stops any old scene when playing a new scene', function() {
-		var scene = new AmbienceStage.Scene();
-		scene.image = 'test-image.jpg';
+	it('stops current scene when starting new scene', function() {
+		var scene = new AmbienceStage.Scene(['Image']);
+		scene.image.url = 'test-image.jpg';
 		stage.play(scene);
 		
-		var newScene = new AmbienceStage.Scene();
-		scene.image = 'test-image.jpg';
+		var newScene = new AmbienceStage.Scene(['Image']);
+		scene.image.url = 'test-image.jpg';
 		stage.play(scene);
 		
 		expect(stage.imageCount).toBe(1);
 	});
 	
-	it("fades an entire stage's opacity", function() {
+	it("fades the entire stage's opacity", function() {
 		runs(function() {
 			var scene = new AmbienceStage.Scene();
-			scene.fadeDuration = 1000;
+			scene.fade.in = 1000;
 			stage.play(scene);
 		});
 		
@@ -47,14 +51,14 @@ describe('Ambience stage', function() {
 		});
 	});
 	
-	it('stops all layers after fading out', function() {
+	it('stops all media after fading out', function() {
 		runs(function() {
-			var scene = new AmbienceStage.Scene();
-			scene.fadeDuration = 1000;
-			scene.background = 'red';
-			scene.image = 'test-image.jpg';
-			scene.sound = ['test-audio.ogg'];
-			scene.text = 'Test';
+			var scene = new AmbienceStage.Scene(['Background', 'Image', 'Sound', 'Text']);
+			scene.fade.in = scene.fade.out = 1000;
+			scene.background.color = 'red';
+			scene.image.url = 'test-image.jpg';
+			scene.sound.tracks = ['test-audio.ogg'];
+			scene.text.string = 'Test';
 			
 			stage.play(scene);
 			
@@ -73,10 +77,43 @@ describe('Ambience stage', function() {
 		waits(1500);
 		
 		runs(function() {
-			expect(stage.background).toBe(AmbienceStage.Scene.base.background);
+			expect(stage.background).toBe('black');
 			expect(stage.imageCount).toBe(0);
 			expect(stage.soundCount).toBe(0);
 			expect(stage.textCount).toBe(0);
 		});
+	});
+
+	it('interrupts scene that is fading out', function() {
+		runs(function() {
+			var scene = new AmbienceStage.Scene(['Image']);
+			scene.image.url = 'test-image.jpg';
+			scene.fade.out = 1000;
+			stage.play(scene);
+			stage.fadeOut();
+		});
+
+		waits(500);
+
+		runs(function() {
+			stage.stop();
+			expect(stage.opacity).toBe(0);
+			expect(stageNode.style.visibility).toBe('hidden');
+			expect(stage.sceneIsPlaying).toBe(false);
+		});
+	});
+	
+	// This test guards against possible leftover state.
+	// In particular, a previous bug made a stopped stage appear to be fading out even though it was not.
+	it('plays scene again after immediate fade-out', function() {
+		var scene = new AmbienceStage.Scene(['Image']);
+		scene.image.url = 'test-image.jpg';
+		
+		stage.play(scene);
+		stage.fadeOut();
+		stage.play(scene);
+		
+		expect(stage.opacity).toNotBe(0);
+		expect(stage.sceneIsPlaying).toBe(true);
 	});
 });
