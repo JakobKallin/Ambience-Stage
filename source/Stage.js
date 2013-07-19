@@ -22,11 +22,7 @@ var AmbienceStage = function(stageNode) {
 	}
 	
 	function addPlayer() {
-		var playerNode = document.createElement('div');
-		playerNode.className = 'scene';
-		stageNode.appendChild(playerNode);
-		
-		var player = new AmbienceStage.ScenePlayer(playerNode);
+		var player = new AmbienceStage.ScenePlayer(stageNode);
 		scenePlayers.push(player);
 		
 		return player;
