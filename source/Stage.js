@@ -3,12 +3,13 @@
 // License: GNU GPL (http://www.gnu.org/licenses/gpl-3.0.txt)
 
 var AmbienceStage = function(stageNode) {
+	var self = this;
+	
 	var scenePlayers = [];
 	
 	function stopAll() {
-		playersToStop.forEach(function(player) {
+		scenePlayers.forEach(function(player) {
 			player.stop();
-			scenePlayers.remove(player);
 		});
 	}
 	
@@ -17,18 +18,10 @@ var AmbienceStage = function(stageNode) {
 		var playersToStop = scenePlayers.slice(0, scenePlayers.length - 1);
 		playersToStop.forEach(function(player) {
 			player.stop();
-			scenePlayers.remove(player);
 		});
 	}
 	
-	function addPlayer() {
-		var player = new AmbienceStage.ScenePlayer(stageNode);
-		scenePlayers.push(player);
-		
-		return player;
-	}
-	
-	this.play = function(scene) {
+	self.play = function(scene) {
 		stopAllButNewest();
 		
 		var playerToFadeOut = scenePlayers[scenePlayers.length - 1];
@@ -36,24 +29,29 @@ var AmbienceStage = function(stageNode) {
 			playerToFadeOut.fadeOut(scene.fade.in);
 		}
 		
-		addPlayer().play(scene);
+		var player = new AmbienceStage.ScenePlayer(stageNode);
+		scenePlayers.push(player);
+		player.play(scene).then(function() {
+			scenePlayers.remove(player)
+		});
 	};
 	
-	this.mixin = function(scene) {
+	// Note that a stage handles an "invalid" call to "mixin" as simply a call to "play" while a scene player ignores such a call entirely. Should it be consistent between the two?
+	self.mixin = function(scene) {
 		stopAllButNewest();
 		
 		if ( scenePlayers[0] ) {
 			scenePlayers[0].mixin(scene);
 		} else {
-			addPlayer().play(scene);
+			self.play(scene);
 		}
 	};
 	
-	this.stop = function() {
+	self.stop = function() {
 		stopAll();
 	};
 	
-	this.fadeOut = function() {
+	self.fadeOut = function() {
 		stopAllButNewest();
 		
 		if ( scenePlayers[0] ) {
@@ -61,7 +59,7 @@ var AmbienceStage = function(stageNode) {
 		}
 	};
 	
-	Object.defineProperty(this, 'sceneIsPlaying', {
+	Object.defineProperty(self, 'sceneIsPlaying', {
 		get: function() {
 			// This is not valid, since players are not immediately removed after fading out.
 			return scenePlayers.length > 0;

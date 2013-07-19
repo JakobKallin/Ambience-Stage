@@ -2,6 +2,7 @@
 // Copyright 2012-2013 Jakob Kallin
 // License: GNU GPL (http://www.gnu.org/licenses/gpl-3.0.txt)
 
+// The scene player appends a scene node to the provided stage node, plays a scene, and then removes the scene node on completion.
 AmbienceStage.ScenePlayer = function(stageNode) {
 	var sceneNode = null;
 	var fade = null;
@@ -10,6 +11,7 @@ AmbienceStage.ScenePlayer = function(stageNode) {
 	
 	var hasStarted = false;
 	var hasStopped = false;
+	var deferred = when.defer();
 	
 	var includeInFade = function(object, property, startValue, endValue) {
 		if ( isFadingOut ) {
@@ -49,6 +51,8 @@ AmbienceStage.ScenePlayer = function(stageNode) {
 		
 		scene = null;
 		hasStopped = true;
+		
+		deferred.resolve();
 	}
 	
 	function stopSceneIfSoundOnly() {
@@ -81,6 +85,8 @@ AmbienceStage.ScenePlayer = function(stageNode) {
 		}
 		
 		hasStarted = true;
+		
+		return deferred.promise;
 	}
 
 	function mixin(mixin) {

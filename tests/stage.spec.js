@@ -16,6 +16,12 @@ describe('Ambience stage', function() {
 		document.body.removeChild(stageNode);
 	});
 	
+	function ImageScene() {
+		var scene = new AmbienceStage.Scene(['Image']);
+		scene.image.url = 'test-image.jpg';
+		return scene;
+	}
+	
 	it('crossfades two scenes', function() {
 		runs(function() {
 			stage.play(new ImageScene());
@@ -87,9 +93,21 @@ describe('Ambience stage', function() {
 		});
 	});
 	
-	function ImageScene() {
-		var scene = new AmbienceStage.Scene(['Image']);
-		scene.image.url = 'test-image.jpg';
-		return scene;
-	}
+	it('signals playback status', function() {
+		runs(function() {
+			expect(stage.sceneIsPlaying).toBe(false);
+			var scene = new ImageScene();
+			stage.play(scene);
+			expect(stage.sceneIsPlaying).toBe(true);
+			
+			stage.fadeOut();
+		});
+		
+		// Promise is resolved immediately but async, so make sure the expectation is made async as well.
+		waits(0);
+		
+		runs(function() {
+			expect(stage.sceneIsPlaying).toBe(false);
+		});
+	});
 });
