@@ -13,18 +13,19 @@ describe('Ambience audio', function() {
 	});
 	
 	afterEach(function() {
+		player.stop();
 		document.body.removeChild(playerNode);
 	});
 	
 	it('fades audio volume', function() {
 		runs(function() {
 			var scene = new AmbienceStage.Scene(['Sound']);
-			scene.fade.in = 1000;
+			scene.fade.in = 500;
 			scene.sound.tracks = ['test-audio.ogg'];
 			player.play(scene);
 		});
 		
-		waits(500);
+		waits(250);
 		
 		runs(function() {
 			// If CSS transitions are used, this has to be changed to getComputedStyle.
@@ -33,7 +34,7 @@ describe('Ambience audio', function() {
 			expect(player.soundNode.volume).toBeLessThan(0.75);
 		});
 		
-		waits(1000);
+		waits(500);
 		
 		runs(function() {
 			expect(player.soundNode.volume).toBe(1);
@@ -55,7 +56,7 @@ describe('Ambience audio', function() {
 			expect(player.sceneIsPlaying).toBe(true);
 		});
 		
-		waits(3000);
+		waits(2000);
 		
 		runs(function() {
 			expect(player.sceneIsPlaying).toBe(false);
@@ -72,7 +73,7 @@ describe('Ambience audio', function() {
 			player.play(scene);
 		});
 		
-		waits(3000);
+		waits(2500);
 		
 		runs(function() {
 			expect(player.soundCount).toBe(0);

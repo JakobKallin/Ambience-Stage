@@ -5,12 +5,12 @@
 AmbienceStage.Background = function(node) {
 	function play(scene) {
 		if ( scene.background ) {
-			node.style.background = scene.background.color;
+			node.style.setProperty('background', scene.background.color);
 		}
 	}
 	
 	function stop() {
-		node.style.background = AmbienceStage.Scene.Background.prototype.color;
+		node.style.removeProperty('background');
 	}
 	
 	return {

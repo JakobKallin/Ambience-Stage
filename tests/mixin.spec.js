@@ -4,16 +4,17 @@
 
 describe('Ambience mixin', function() {
 	var player;
-	var playerNode;
+	var stageNode;
 	
 	beforeEach(function() {
-		playerNode = document.createElement('div');
-		document.body.appendChild(playerNode);
-		player = new AmbienceStage.DebugScenePlayer(playerNode);
+		stageNode = document.createElement('div');
+		document.body.appendChild(stageNode);
+		player = new AmbienceStage.DebugScenePlayer(stageNode);
 	});
 	
 	afterEach(function() {
-		document.body.removeChild(playerNode);
+		player.stop();
+		document.body.removeChild(stageNode);
 	});
 	
 	it('replaces defined properties', function() {
@@ -57,21 +58,6 @@ describe('Ambience mixin', function() {
 		
 		runs(function() {
 			expect(player.opacity).toBeGreaterThan(0.9);
-		});
-	});
-	
-	it('respects fading when a scene is not already playing', function() {
-		runs(function() {
-			var mixin = new AmbienceStage.Scene(['Text']);
-			mixin.text.string = 'Mixin';
-			mixin.fade.in = 2000;
-			player.mixin(mixin);
-		});
-		
-		waits(1000);
-		
-		runs(function() {
-			expect(player.opacity).toBeBetween(0.25, 0.75);
 		});
 	});
 	
@@ -156,7 +142,7 @@ describe('Ambience mixin', function() {
 		mixin.image.url = 'test-image.jpg';
 		player.mixin(mixin);
 		
-		expect(playerNode.style.visibility).toBe('visible');
+		expect(player.visibility).toBe('visible');
 	});
 	
 	it('respects volume of mixed-in scene', function() {

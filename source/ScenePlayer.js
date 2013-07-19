@@ -2,10 +2,14 @@
 // Copyright 2012-2013 Jakob Kallin
 // License: GNU GPL (http://www.gnu.org/licenses/gpl-3.0.txt)
 
-AmbienceStage.ScenePlayer = function(node) {
+AmbienceStage.ScenePlayer = function(stageNode) {
+	var sceneNode = null;
 	var fade = null;
 	var isFadingOut = false;
-	var scene = null
+	var scene = null;
+	
+	var hasStarted = false;
+	var hasStopped = false;
 	
 	var includeInFade = function(object, property, startValue, endValue) {
 		if ( isFadingOut ) {
@@ -22,17 +26,10 @@ AmbienceStage.ScenePlayer = function(node) {
 		fade.targets.remove(matchingTarget);
 	};
 	
-	var mediaPlayers = {
-		'background': new AmbienceStage.Background(node),
-		'image': new AmbienceStage.Image(node),
-		'sound': new AmbienceStage.Sound(node, stopSceneIfSoundOnly, includeInFade, removeFromFade),
-		'text': new AmbienceStage.Text(node)
-	};
-
-	stop();
+	var mediaPlayers = {};
 	
 	function stop() {
-		if ( scene === null ) {
+		if ( hasStopped || !hasStarted ) {
 			return;
 		}
 
@@ -48,9 +45,10 @@ AmbienceStage.ScenePlayer = function(node) {
 		}
 		isFadingOut = false;
 		
-		node.style.visibility = 'hidden';
-		node.style.opacity = 0;
+		stageNode.removeChild(sceneNode);
+		
 		scene = null;
+		hasStopped = true;
 	}
 	
 	function stopSceneIfSoundOnly() {
@@ -60,8 +58,19 @@ AmbienceStage.ScenePlayer = function(node) {
 	}
 	
 	function play(newScene) {
-		stop();
-
+		if ( hasStarted ) {
+			return;
+		}
+		
+		sceneNode = document.createElement('div');
+		sceneNode.className = 'scene';
+		stageNode.appendChild(sceneNode);
+		
+		mediaPlayers.background = new AmbienceStage.Background(sceneNode);
+		mediaPlayers.image = new AmbienceStage.Image(sceneNode);
+		mediaPlayers.sound = new AmbienceStage.Sound(sceneNode, stopSceneIfSoundOnly, includeInFade, removeFromFade);
+		mediaPlayers.text = new AmbienceStage.Text(sceneNode);
+		
 		scene = newScene;
 		playFadeIn(scene);
 		
@@ -70,12 +79,12 @@ AmbienceStage.ScenePlayer = function(node) {
 				mediaPlayers[mediaType].play(scene);
 			}
 		}
+		
+		hasStarted = true;
 	}
 
 	function mixin(mixin) {
-		var alreadyPlaying = scene !== null;
-		if ( !alreadyPlaying ) {
-			play(mixin);
+		if ( hasStopped || !hasStarted ) {
 			return;
 		}
 		
@@ -97,7 +106,7 @@ AmbienceStage.ScenePlayer = function(node) {
 		}
 
 		if ( mixin.isVisual ) {
-			node.style.visibility = 'visible';
+			sceneNode.style.visibility = 'visible';
 		}
 
 		scene = newScene;
@@ -105,18 +114,18 @@ AmbienceStage.ScenePlayer = function(node) {
 
 	function playFadeIn(scene) {
 		if ( scene.isVisual ) {
-			node.style.visibility = 'visible';
+			sceneNode.style.visibility = 'visible';
 		}
 		var targets = (fade) ? fade.targets : undefined;
 		fade = new Manymation.Animation(scene.fade.in, undefined, targets);
-		includeInFade(node.style, 'opacity', 0, 0.999)
+		includeInFade(sceneNode.style, 'opacity', 0, 0.999)
 		fade.start();
 	}
 	
 	// If a duration is passed in, ignore duration specified in scene object.
 	// This was added because crossfading between scenes in the Stage class uses the duration of the new scene, not the old one.
 	function fadeOut(duration) {
-		if ( scene === null ) {
+		if ( hasStopped || !hasStarted ) {
 			return;
 		}
 		
@@ -151,7 +160,7 @@ AmbienceStage.ScenePlayer = function(node) {
 		stop: stop,
 		fadeOut: fadeOut,
 		get sceneIsPlaying() {
-			return scene !== null;
+			return hasStarted && !hasStopped;
 		}
 	};
 };

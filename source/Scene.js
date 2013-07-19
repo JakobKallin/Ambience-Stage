@@ -32,7 +32,9 @@ AmbienceStage.Scene.prototype = {
 	}
 };
 
-AmbienceStage.Scene.Sound = function() {};
+AmbienceStage.Scene.Sound = function() {
+	// Shouldn't there be an empty "tracks" array created here?
+};
 AmbienceStage.Scene.Sound.prototype = {
 	overlap: 0,
 	shuffle: false,
