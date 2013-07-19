@@ -40,8 +40,7 @@ describe('Ambience scene player', function() {
 		runs(function() {
 			// If CSS transitions are used, this has to be changed to getComputedStyle.
 			// We're using a fairly generous interval for the opacity.
-			expect(player.opacity).toBeGreaterThan(0.25);
-			expect(player.opacity).toBeLessThan(0.75);
+			expect(player.opacity).toBeBetween(0.25, 0.75);
 		});
 		
 		waits(1000);

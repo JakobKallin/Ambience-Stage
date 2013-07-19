@@ -12,17 +12,6 @@ describe('Ambience mixin', function() {
 		player = new AmbienceStage.DebugScenePlayer(playerNode);
 	});
 	
-	beforeEach(function() {
-		this.addMatchers({
-			toBeBetween: function(first, second) {
-				var lowest = Math.min(first, second);
-				var highest = Math.max(first, second);
-				
-				return lowest <= this.actual && this.actual <= highest;
-			}
-		});
-	});
-	
 	afterEach(function() {
 		document.body.removeChild(playerNode);
 	});
