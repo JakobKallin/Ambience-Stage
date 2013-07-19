@@ -3,7 +3,7 @@
 // License: GNU GPL (http://www.gnu.org/licenses/gpl-3.0.txt)
 
 AmbienceStage.DebugScenePlayer = function(node) {
-	var stage = new AmbienceStage(node);
+	var stage = new AmbienceStage.ScenePlayer(node);
 	
 	Object.defineProperty(stage, 'imageNode', {
 		get: function() {
