@@ -2,6 +2,7 @@
 // Copyright 2012-2013 Jakob Kallin
 // License: GNU GPL (http://www.gnu.org/licenses/gpl-3.0.txt)
 
+// When a scene is stopped, the scene's node and the stage's playback status are updated synchronously (using promises). For this reason, some tests use "waits" with a delay of zero.
 describe('Ambience stage', function() {
 	var stage;
 	var stageNode;
@@ -21,6 +22,63 @@ describe('Ambience stage', function() {
 		scene.image.url = 'test-image.jpg';
 		return scene;
 	}
+	
+	it('starts scene', function() {
+		stage.play(new ImageScene());
+		
+		expect(stageNode.children.length).toBe(1);
+		expect(stage.sceneIsPlaying).toBe(true);
+	});
+	
+	it('stops scene', function() {
+		runs(function() {
+			stage.play(new ImageScene());
+			stage.stop();
+		});
+		
+		waits(0);
+		
+		runs(function() {
+			expect(stageNode.children.length).toBe(0);
+			expect(stage.sceneIsPlaying).toBe(false);
+		});
+	});
+	
+	it('fades out scene', function() {
+		runs(function() {
+			var scene = new ImageScene();
+			scene.fade.out = 500;
+			stage.play(scene);
+			stage.fadeOut();
+		});
+		
+		waits(250);
+		
+		runs(function() {
+			expect(stageNode.children.length).toBe(1);
+			expect(stage.sceneIsPlaying).toBe(true);
+		});
+		
+		waits(350);
+		
+		runs(function() {
+			expect(stageNode.children.length).toBe(0);
+			expect(stage.sceneIsPlaying).toBe(false);
+		});
+	});
+	
+	it('stops old scene when starting new scene', function() {
+		runs(function() {
+			stage.play(new ImageScene());
+			stage.play(new ImageScene());
+		});
+		
+		waits(0);
+		
+		runs(function() {
+			expect(stageNode.children.length).toBe(1);
+		});
+	});
 	
 	it('crossfades two scenes', function() {
 		runs(function() {
@@ -93,20 +151,25 @@ describe('Ambience stage', function() {
 		});
 	});
 	
-	it('signals playback status', function() {
+	it('stops both scenes during crossfade', function() {
 		runs(function() {
-			expect(stage.sceneIsPlaying).toBe(false);
-			var scene = new ImageScene();
-			stage.play(scene);
-			expect(stage.sceneIsPlaying).toBe(true);
+			stage.play(new ImageScene());
 			
-			stage.fadeOut();
+			var nextScene = new ImageScene();
+			nextScene.fade.in = 500;
+			stage.play(nextScene);
 		});
 		
-		// Promise is resolved immediately but async, so make sure the expectation is made async as well.
+		waits(250);
+		
+		runs(function() {
+			stage.stop();
+		});
+		
 		waits(0);
 		
 		runs(function() {
+			expect(stageNode.children.length).toBe(0);
 			expect(stage.sceneIsPlaying).toBe(false);
 		});
 	});

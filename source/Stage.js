@@ -5,7 +5,7 @@
 var AmbienceStage = function(stageNode) {
 	var self = this;
 	
-	var scenePlayers = [];
+	var scenePlayers = new List();
 	
 	function stopAll() {
 		scenePlayers.forEach(function(player) {
@@ -24,7 +24,7 @@ var AmbienceStage = function(stageNode) {
 	self.play = function(scene) {
 		stopAllButNewest();
 		
-		var playerToFadeOut = scenePlayers[scenePlayers.length - 1];
+		var playerToFadeOut = scenePlayers.last;
 		if ( playerToFadeOut ) {
 			playerToFadeOut.fadeOut(scene.fade.in);
 		}
@@ -40,8 +40,8 @@ var AmbienceStage = function(stageNode) {
 	self.mixin = function(scene) {
 		stopAllButNewest();
 		
-		if ( scenePlayers[0] ) {
-			scenePlayers[0].mixin(scene);
+		if ( scenePlayers.last ) {
+			scenePlayers.last.mixin(scene);
 		} else {
 			self.play(scene);
 		}
@@ -54,8 +54,8 @@ var AmbienceStage = function(stageNode) {
 	self.fadeOut = function() {
 		stopAllButNewest();
 		
-		if ( scenePlayers[0] ) {
-			scenePlayers[0].fadeOut();
+		if ( scenePlayers.last ) {
+			scenePlayers.last.fadeOut();
 		}
 	};
 	
