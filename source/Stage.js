@@ -65,4 +65,10 @@ var AmbienceStage = function(stageNode) {
 			return scenePlayers.length > 0;
 		}
 	});
+	
+	Object.defineProperty(self, 'node', {
+		get: function() {
+			return stageNode;
+		}
+	});
 };
