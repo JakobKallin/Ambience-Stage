@@ -3,7 +3,9 @@
 // License: GNU GPL (http://www.gnu.org/licenses/gpl-3.0.txt)
 
 // The scene player appends a scene node to the provided stage node, plays a scene, and then removes the scene node on completion.
+// Note that `stageNode.ownerDocument` (`doc`) is used to create elements. This is because IE10 does not allow adding elements from a different document (which they otherwise can be, since the script can be run from a different window).
 AmbienceStage.ScenePlayer = function(stageNode) {
+	var doc = stageNode.ownerDocument;
 	var sceneNode = null;
 	var fade = null;
 	var isFadingOut = false;
@@ -66,7 +68,7 @@ AmbienceStage.ScenePlayer = function(stageNode) {
 			return;
 		}
 		
-		sceneNode = document.createElement('div');
+		sceneNode = doc.createElement('div');
 		sceneNode.className = 'scene';
 		stageNode.appendChild(sceneNode);
 		

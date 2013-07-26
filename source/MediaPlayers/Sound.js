@@ -3,6 +3,8 @@
 // License: GNU GPL (http://www.gnu.org/licenses/gpl-3.0.txt)
 
 AmbienceStage.Sound = function(container, stopSceneIfSoundOnly, includeInFade, removeFromFade) {
+	var doc = container.ownerDocument;
+	
 	var scene;
 	var trackIndex;
 	var tracks = [];
@@ -75,7 +77,8 @@ AmbienceStage.Sound = function(container, stopSceneIfSoundOnly, includeInFade, r
 };
 
 AmbienceStage.Track = function(path, container, maxVolume, includeInFade, removeFromFade) {
-	var node = document.createElement('audio');
+	var doc = container.ownerDocument;
+	var node = doc.createElement('audio');
 	node.src = path;
 	node.volume = maxVolume;
 	includeInFade(node, 'volume', 0, maxVolume);

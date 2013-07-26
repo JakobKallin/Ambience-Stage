@@ -3,13 +3,14 @@
 // License: GNU GPL (http://www.gnu.org/licenses/gpl-3.0.txt)
 
 AmbienceStage.Text = function(container) {
+	var doc = container.ownerDocument;
 	var outerNode; // This one is needed to have left-aligned text in the center, without filling the entire width.
 	var innerNode;
 	
 	function play(scene) {
-		outerNode = document.createElement('div');
+		outerNode = doc.createElement('div');
 		outerNode.className = 'text outer';
-		innerNode = document.createElement('div');
+		innerNode = doc.createElement('div');
 		innerNode.className = 'text inner';
 		outerNode.appendChild(innerNode);
 		

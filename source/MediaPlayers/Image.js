@@ -3,10 +3,11 @@
 // License: GNU GPL (http://www.gnu.org/licenses/gpl-3.0.txt)
 
 AmbienceStage.Image = function(container) {
+	var doc = container.ownerDocument;
 	var node;
 	
 	function play(scene) {
-		node = document.createElement('div');
+		node = doc.createElement('div');
 		node.className = 'image';
 		container.insertBefore(node, container.firstChild);
 
