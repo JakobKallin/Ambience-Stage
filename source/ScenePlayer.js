@@ -121,9 +121,9 @@ AmbienceStage.ScenePlayer = function(stageNode) {
 	}
 
 	function playFadeIn(scene) {
-		if ( scene.isVisual ) {
-			sceneNode.style.visibility = 'visible';
-		}
+		sceneNode.style.visibility = scene.isVisual ? 'visible' : 'hidden';
+		
+		// Start the fade whether the scene is visual or not, because we still want to fade audio.
 		var targets = (fade) ? fade.targets : undefined;
 		fade = new Manymation.Animation(scene.fade.in, undefined, targets);
 		includeInFade(sceneNode.style, 'opacity', 0, 0.999)
