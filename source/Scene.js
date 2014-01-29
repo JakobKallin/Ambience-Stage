@@ -18,12 +18,21 @@ AmbienceStage.Scene = function(media) {
 
 
 AmbienceStage.Scene.prototype = {
+	// This is needed to hide the scene from showing when it has neither image
+	// nor text. If we didn't do this, all scenes (which have a black background
+	// by default) would cover elements below the stage in the DOM tree (such as
+	// other stages).
 	get isVisual() {
 		return Boolean(
 			this.image ||
 			this.text
 		);
 	},
+	// This is needed to be able to automatically end audio-only scenes (such as
+	// sound effects) once the sound has stopped playing. If this isn't done,
+	// users would have to issue a "stop" command in order to stop a scene that
+	// is no longer visible or audible (and thus for all practical purposes does
+	// not exist).
 	get hasOnlySound() {
 		return Boolean(
 			this.sound &&
