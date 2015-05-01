@@ -1,74 +1,102 @@
-// This file is part of Ambience Stage
-// Copyright 2012-2013 Jakob Kallin
-// License: GNU GPL (http://www.gnu.org/licenses/gpl-3.0.txt)
+'use strict';
 
-var AmbienceStage = function(stageNode) {
-	var self = this;
-	
-	var scenePlayers = new List();
-	
-	function stopAll() {
-		scenePlayers.forEach(function(player) {
-			player.stop();
+var ambience = (function() {
+	function start(items, stage, fade) {
+		if ( !fade ) {
+			fade = 0;
+		}
+		
+		var fadeOut = stop(stage, fade);
+		
+		var scene = document.createElement('div');
+		
+		var actions = {
+			image: startImage,
+			sound: startSound
+		}
+		
+		items.forEach(function(item) {
+			actions[item.type](item, scene);
 		});
+		
+		stage.appendChild(scene);
+		
+		var update = function update(ms) {
+			var ratio = fade === 0 ? 1 : ms / fade;
+			// Note that the we don't set the opacity to exactly 1.0, because
+			// that can cause some undesirable text rendering issues due to
+			// completely opaque text using a different rendering method.
+			scene.style.opacity = Math.min(ratio, 0.999);
+			query('audio', scene).forEach(function(audio) {
+				audio.volume = Math.min(ratio, 1);
+			});
+			
+			// Update the scene being faded out.
+			fadeOut(ms);
+		};
+		
+		update(0);
+		return update;
 	}
 	
-	function stopAllButNewest() {
-		// Note that the removal operation below is valid, since we're not removing from the sliced list.
-		var playersToStop = scenePlayers.slice(0, scenePlayers.length - 1);
-		playersToStop.forEach(function(player) {
-			player.stop();
-		});
+	function startImage(image, scene) {
+		var node = document.createElement('div');
+		node.style.backgroundImage = 'url("' + encodeURI(image.url) + '")';
+		node.className = 'image';
+		scene.appendChild(node);
 	}
 	
-	self.play = function(scene) {
-		stopAllButNewest();
-		
-		var playerToFadeOut = scenePlayers.last;
-		if ( playerToFadeOut ) {
-			playerToFadeOut.fadeOut(scene.fade.in);
+	function startSound(sound, scene) {
+		var node = document.createElement('audio');
+		node.src = sound.url;
+		node.className = 'sound';
+		scene.appendChild(node);
+	}
+	
+	function stop(stage, fade) {
+		if ( stage.children.length === 0 ) {
+			return function() {};
 		}
 		
-		var player = new AmbienceStage.ScenePlayer(stageNode);
-		scenePlayers.push(player);
-		player.play(scene).then(function() {
-			scenePlayers.remove(player)
-		});
-	};
-	
-	// Note that a stage handles an "invalid" call to "mixin" as simply a call to "play" while a scene player ignores such a call entirely. Should it be consistent between the two?
-	self.mixin = function(scene) {
-		stopAllButNewest();
+		if ( !fade ) {
+			fade = 0;
+		}
 		
-		if ( scenePlayers.last ) {
-			scenePlayers.last.mixin(scene);
-		} else {
-			self.play(scene);
-		}
-	};
-	
-	self.stop = function() {
-		stopAll();
-	};
-	
-	self.fadeOut = function() {
-		stopAllButNewest();
+		var removed = false;
+		var update = function update(ms) {
+			if ( removed ) {
+				return;
+			}
+			
+			var scene = stage.children[0];
+			var ratio = fade === 0 ? 0 : 1 - (ms / fade);
+			
+			if ( ratio === 0 ) {
+				scene.remove();
+				removed = true;
+			}
+			else {
+				// Note that the we don't set the opacity to exactly 1.0,
+				// because that can cause some undesirable text rendering issues
+				// due to completely opaque text using a different rendering
+				// method.
+				scene.style.opacity = Math.min(ratio, 0.999);
+				query('audio', scene).forEach(function(audio) {
+					audio.volume = Math.min(ratio, 1);
+				});
+			}
+		};
 		
-		if ( scenePlayers.last ) {
-			scenePlayers.last.fadeOut();
-		}
+		update(0);
+		return update;
+	}
+	
+	function query(expression, node) {
+		return Array.prototype.slice.call(node.querySelectorAll(expression));
+	}
+	
+	return {
+		start: start,
+		stop: stop
 	};
-	
-	Object.defineProperty(self, 'sceneIsPlaying', {
-		get: function() {
-			// This is not valid, since players are not immediately removed after fading out.
-			return scenePlayers.length > 0;
-		}
-	});
-	
-	Object.defineProperty(self, 'node', {
-		get: function() {
-			return stageNode;
-		}
-	});
-};
+})();
