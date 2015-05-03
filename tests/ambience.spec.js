@@ -1,6 +1,10 @@
 'use strict';
 
 suite('ambience', function() {
+	var assert = chai.assert;
+	var assertEqual = chai.assert.deepEqual;
+	var assertError = chai.assert.throws;
+	
 	var ambience = window.ambience;
 	var stage;
 	
@@ -9,7 +13,7 @@ suite('ambience', function() {
 			return { type: 'image', url: 'http://example/' };
 		},
 		sound: function() {
-			return { type: 'sound', url: 'http://example/' };
+			return { type: 'sound', tracks: ['http://example/'] };
 		}
 	};
 	
@@ -36,17 +40,15 @@ suite('ambience', function() {
 		return element.querySelector(expression);
 	}
 	
-	function assert(expression) {
-		if ( expression === false ) {
-			throw new Error('Assertion failed');
-		}
-	}
+	suite('interface', function() {
+		// items and scene attributes required
+	});
 	
 	suite('stage', function() {
 		setup(function() {
 			stage = document.createElement('div');
-			// Append the stage to the document so that `getComputedStyle` works as
-			// expected.
+			// Append the stage to the document so that `getComputedStyle` works
+			// as expected.
 			document.body.appendChild(stage);
 		});
 		
@@ -212,5 +214,224 @@ suite('ambience', function() {
 				assert(isOpaque(stage.children[0]));
 			});
 		});
+	});
+	
+	suite('sound', function() {
+		var scene;
+		var tracks;
+		var audio;
+		// The `tick` below is updated whenever a new track starts and the tests
+		// below always use the latest one.
+		var tick;
+		
+		setup(function() {
+			scene = document.createElement('div');
+			tracks = [];
+			audio = {
+				start: function(url, newTick) {
+					tick = newTick;
+					tracks.push(url);
+					return {
+						duration: function() {
+							return 1;
+						}
+					};
+				}
+			};
+		});
+		
+		test('no tracks', function() {
+			assertError(function() {
+				ambience.start.sound({
+					tracks: []
+				}, scene, { audio: audio });
+			});
+		});
+		
+		test('single track, loop', function() {
+			ambience.start.sound({
+				tracks: ['test'],
+				loop: true
+			}, scene, { audio: audio });
+			tick(1);
+			
+			assertEqual(tracks, ['test', 'test']);
+		});
+		
+		test('single track, no loop', function() {
+			ambience.start.sound({
+				tracks: ['test'],
+				loop: false
+			}, scene, { audio: audio });
+			tick(1);
+			
+			assertEqual(tracks, ['test']);
+		});
+		
+		test('two tracks, loop', function() {
+			ambience.start.sound({
+				tracks: ['one', 'two'],
+				loop: true
+			}, scene, { audio: audio });
+			tick(1);
+			tick(1);
+			tick(1);
+			
+			assertEqual(tracks, ['one', 'two', 'one', 'two']);
+		});
+		
+		test('two tracks, no loop', function() {
+			ambience.start.sound({
+				tracks: ['one', 'two'],
+				loop: false
+			}, scene, { audio: audio });
+			tick(1);
+			tick(1);
+			tick(1);
+			
+			assertEqual(tracks, ['one', 'two']);
+		});
+		
+		// Just testing with two tracks misses error of the type "first track is
+		// always played, second is scheduled right afterwards, but the third
+		// one is scheduled later and using a different method and thus fails",
+		// so we try with three tracks to be on the safe side.
+		test('three tracks, loop', function() {
+			ambience.start.sound({
+				tracks: ['one', 'two', 'three'],
+				loop: true
+			}, scene, { audio: audio });
+			tick(1);
+			tick(1);
+			tick(1);
+			tick(1);
+			tick(1);
+			
+			assertEqual(tracks, ['one', 'two', 'three', 'one', 'two', 'three']);
+		});
+		
+		test('three tracks, no loop', function() {
+			ambience.start.sound({
+				tracks: ['one', 'two', 'three'],
+				loop: false
+			}, scene, { audio: audio });
+			tick(1);
+			tick(1);
+			tick(1);
+			
+			assertEqual(tracks, ['one', 'two', 'three']);
+		});
+		
+		test('single track, loop, overlap', function() {
+			ambience.start.sound({
+				tracks: ['test'],
+				loop: true,
+				overlap: 0.2
+			}, scene, { audio: audio });
+			tick(0.8);
+			
+			assertEqual(tracks, ['test', 'test']);
+		});
+		
+		test('single track, no loop, overlap', function() {
+			ambience.start.sound({
+				tracks: ['test'],
+				loop: false,
+				overlap: 0.2
+			}, scene, { audio: audio });
+			tick(0.8);
+			
+			assertEqual(tracks, ['test']);
+		});
+		
+		test('single overlap regardless of number of ticks', function() {
+			var firstTick = ambience.start.sound({
+				tracks: ['one'],
+				loop: true,
+				overlap: 0.2
+			}, scene, { audio: audio });
+			firstTick(0.81);
+			firstTick(0.82);
+			firstTick(0.83);
+			
+			assertEqual(tracks, ['one', 'one']);
+		});
+		
+		test('single track, no loop, shuffle', function() {
+			ambience.start.sound({
+				tracks: ['test'],
+				loop: false,
+				shuffle: true
+			}, scene, { audio: audio });
+			
+			tick(1);
+			assertEqual(tracks, ['test']);
+		});
+		
+		test('single track, loop, shuffle', function() {
+			ambience.start.sound({
+				tracks: ['test'],
+				loop: true,
+				shuffle: true
+			}, scene, { audio: audio });
+			
+			tick(1);
+			assertEqual(tracks, ['test', 'test']);
+		});
+		
+		test('two tracks, no loop, shuffle', function() {
+			ambience.start.sound({
+				tracks: ['one', 'two'],
+				loop: false,
+				shuffle: true
+			}, scene, { audio: audio, shuffle: constant(['two', 'one']) });
+			
+			tick(1);
+			assertEqual(tracks, ['two', 'one']);
+		});
+		
+		test('two tracks, loop, shuffle', function() {
+			ambience.start.sound({
+				tracks: ['one', 'two'],
+				loop: false,
+				shuffle: true
+			}, scene, { audio: audio, shuffle: constant(['two', 'one']) });
+			
+			tick(1);
+			assertEqual(tracks, ['two', 'one']);
+		});
+		
+		test('two tracks, loop, shuffle twice', function() {
+			var shuffleCount = 0;
+			var shuffle = function() {
+				shuffleCount += 1;
+				if ( shuffleCount === 1 ) {
+					return ['two', 'one'];
+				}
+				else if ( shuffleCount === 2 ) {
+					return ['one', 'two'];
+				}
+				else {
+					throw new Error('Tracks shuffled too many times.');
+				}
+			};
+			
+			ambience.start.sound({
+				tracks: ['one', 'two'],
+				loop: true,
+				shuffle: true
+			}, scene, { audio: audio, shuffle: shuffle });
+			
+			tick(1);
+			tick(1);
+			tick(1);
+			assertEqual(tracks, ['two', 'one', 'one', 'two']);
+		});
+		
+		function constant(value) {
+			return function() {
+				return value;
+			};
+		}
 	});
 });
