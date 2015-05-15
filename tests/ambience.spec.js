@@ -6,273 +6,286 @@ suite('ambience', function() {
 	var assertError = chai.assert.throws;
 	
 	var ambience = window.ambience;
-	var stage;
 	
 	var fixture = {
 		image: function() {
-			return { type: 'image', url: 'http://example/' };
+			return { type: 'image', url: 'image' };
 		},
 		sound: function() {
-			return { type: 'sound', tracks: ['http://example/'] };
+			return { type: 'sound', tracks: ['example/sound'] };
 		}
 	};
 	
-	function style(element) {
-		return getComputedStyle(element);
+	function collect(target) {
+		return function(value) {
+			target.push(value);
+		};
 	}
 	
-	function isOpaque(element) {
-		// Note that the we don't check for exactly 1.0 opacity, because that
-		// can cause some undesirable text rendering issues due to completely
-		// opaque text using a different rendering method.
-		return opacity(element) >= 0.99;
+	function chain(f1, f2) {
+		return function(x) {
+			return f2(f1(x));
+		};
 	}
 	
-	function isTransparent(element) {
-		return opacity(element) === 0;
+	function extract(property) {
+		return function(object) {
+			return object[property];
+		};
 	}
 	
-	function opacity(element) {
-		return parseFloat(style(element).opacity);
+	function extend(object, newProperty, value) {
+		var newObject = {};
+		for ( var property in object ) {
+			newObject[property] = object[property];
+		}
+		newObject[newProperty] = value;
+		return newObject;
 	}
 	
-	function query(element, expression) {
-		return element.querySelector(expression);
-	}
-	
-	suite('interface', function() {
-		// items and scene attributes required
+	suite('helpers', function() {
+		test('chain extract and collect', function() {
+			var urls = [];
+			var composite = chain(extract('url'), collect(urls));
+			composite({ url: 'test' });
+			assertEqual(urls, ['test']);
+		});
 	});
 	
-	suite('stage', function() {
+	suite('scene', function() {
+		var started;
+		var stopped;
+		var fadeIn;
+		var fadeOut;
+		var stage;
+		
 		setup(function() {
-			stage = document.createElement('div');
-			// Append the stage to the document so that `getComputedStyle` works
-			// as expected.
-			document.body.appendChild(stage);
+			started = 0;
+			stopped = 0;
+			fadeIn = [];
+			fadeOut = [];
+			
+			var callbacks = {
+				start: { image: function() { started += 1; } },
+				stop: { image: function() { stopped += 1; } },
+				fade: {
+					in: collect(fadeIn),
+					out: collect(fadeOut)
+				}
+			};
+			
+			stage = ambience(callbacks);
 		});
-		
-		teardown(function() {
-			stage.remove();
-		});
-		
-		// test('start empty scene', function() {
-		// 	ambience.start([], stage);
-		// 	assert(stage.children.length === 0);
-		// });
-		
-		// test('stop empty scene', function() {
-		// 	ambience.start([], stage);
-		// 	ambience.stop(stage);
-		// 	assert(stage.children.length === 0);
-		// });
 		
 		test('start scene', function() {
-			ambience.start([fixture.image()], stage);
-			assert(stage.children.length === 1);
+			stage.start([fixture.image()]);
+			
+			assertEqual(started, 1);
 		});
 		
 		test('stop scene', function() {
-			ambience.start([fixture.image()], stage);
-			ambience.stop(stage);
-			assert(stage.children.length === 0);
+			stage.start([fixture.image()]);
+			stage.stop();
+			
+			// One indirectly from calling `start`, one directly from calling `stop`.
+			assertEqual(stopped, 2);
 		});
 		
-		suite('fade in scene', function() {
-			suite('visually', function() {
-				test('beginning', function() {
-					ambience.start([fixture.image()], stage, 1000);
-					assert(opacity(stage.children[0]) === 0);
-				});
-				
-				test('middle', function() {
-					var update = ambience.start([fixture.image()], stage, 1000);
-					update(500);
-					assert(opacity(stage.children[0]) === 0.5);
-				});
-				
-				test('end', function() {
-					var update = ambience.start([fixture.image()], stage, 1000);
-					update(1000);
-					assert(isOpaque(stage.children[0]));
-				});
-				
-				test('after', function() {
-					var update = ambience.start([fixture.image()], stage, 1000);
-					update(1500);
-					assert(isOpaque(stage.children[0]));
-				});
-			});
+		test('fade in, before', function() {
+			var update = stage.start([], 1000);
 			
-			suite('aurally', function() {
-				test('beginning', function() {
-					ambience.start([fixture.sound()], stage, 1000);
-					assert(query(stage, '.sound').volume === 0);
-				});
-				
-				test('middle', function() {
-					var update = ambience.start([fixture.sound()], stage, 1000);
-					update(500);
-					assert(query(stage, '.sound').volume === 0.5);
-				});
-				
-				test('end', function() {
-					var update = ambience.start([fixture.sound()], stage, 1000);
-					update(1000);
-					assert(query(stage, '.sound').volume === 1);
-				});
-				
-				test('after', function() {
-					var update = ambience.start([fixture.sound()], stage, 1000);
-					update(1500);
-					assert(query(stage, '.sound').volume === 1);
-				});
-			});
+			assertEqual(fadeIn, []);
 		});
 		
-		suite('fade out scene', function() {
-			suite('visually', function() {
-				test('beginning', function() {
-					ambience.start([fixture.image()], stage);
-					ambience.stop(stage, 1000);
-					assert(isOpaque(stage.children[0]));
-				});
-				
-				test('middle', function() {
-					ambience.start([fixture.image()], stage);
-					var update = ambience.stop(stage, 1000);
-					update(500);
-					assert(opacity(stage.children[0]) === 0.5);
-				});
-				
-				test('end', function() {
-					ambience.start([fixture.image()], stage);
-					var update = ambience.stop(stage, 1000);
-					update(1000);
-					assert(stage.children.length === 0);
-				});
-			});
+		test('fade in, beginning', function() {
+			var update = stage.start([], 1000);
+			update(0);
 			
-			suite('aurally', function() {
-				test('beginning', function() {
-					ambience.start([fixture.sound()], stage);
-					ambience.stop(stage, 1000);
-					assert(query(stage, '.sound').volume === 1);
-				});
-				
-				test('middle', function() {
-					ambience.start([fixture.sound()], stage);
-					var update = ambience.stop(stage, 1000);
-					update(500);
-					assert(query(stage, '.sound').volume === 0.5);
-				});
-				
-				test('end', function() {
-					ambience.start([fixture.sound()], stage);
-					var update = ambience.stop(stage, 1000);
-					update(1000);
-					assert(stage.children.length === 0);
-				});
-			});
+			assertEqual(fadeIn, [0]);
 		});
 		
-		// The tests below only check for visual fading. We assume that aural fading
-		// also works in this situation if the separate aural fading tests have
-		// passed.
-		suite('replace scene', function() {
-			test('without fading', function() {
-				ambience.start([{ type: 'image', url: 'http://one.example/' }], stage);
-				ambience.start([{ type: 'image', url: 'http://two.example/' }], stage);
-				
-				assert(stage.children.length === 1);
-				assert(style(query(stage, '.image')).backgroundImage === 'url(http://two.example/)');
-			});
+		test('fade in, middle', function() {
+			var update = stage.start([], 1000);
+			update(500);
 			
-			test('with fading, beginning', function() {
-				ambience.start([{ type: 'image', url: 'http://one.example/' }], stage);
-				ambience.start([{ type: 'image', url: 'http://two.example/' }], stage, 1000);
-				
-				assert(isOpaque(stage.children[0]))
-				assert(isTransparent(stage.children[1]));
-			});
+			assertEqual(fadeIn, [0.5]);
+		});
+		
+		test('fade in, end', function() {
+			var update = stage.start([], 1000);
+			update(1000);
 			
-			test('with fading, middle', function() {
-				ambience.start([{ type: 'image', url: 'http://one.example/' }], stage);
-				var update = ambience.start([{ type: 'image', url: 'http://two.example/' }], stage, 1000);
-				update(500);
-				
-				assert(opacity(stage.children[0]) === 0.5);
-				assert(opacity(stage.children[1]) === 0.5);
-			});
+			assertEqual(fadeIn, [1]);
+		});
+		
+		test('fade in, after', function() {
+			var update = stage.start([], 1000);
+			update(1500);
 			
-			test('with fading, end', function() {
-				ambience.start([{ type: 'image', url: 'http://one.example/' }], stage);
-				var update = ambience.start([{ type: 'image', url: 'http://two.example/' }], stage, 1000);
-				update(1000);
-				
-				assert(stage.children.length === 1);
-				assert(isOpaque(stage.children[0]));
-			});
+			assertEqual(fadeIn, [1]);
+		});
+		
+		test('fade out, before', function() {
+			stage.start([]);
+			stage.stop(1000);
+			
+			assertEqual(fadeOut, []);
+		});
+		
+		test('fade out, beginning', function() {
+			stage.start([]);
+			var update = stage.stop(1000);
+			update(0);
+			
+			assertEqual(fadeOut, [1]);
+		});
+		
+		test('fade out, middle', function() {
+			stage.start([]);
+			var update = stage.stop(1000);
+			update(500);
+			
+			assertEqual(fadeOut, [0.5]);
+		});
+		
+		test('fade out, end', function() {
+			stage.start([]);
+			var update = stage.stop(1000);
+			update(1000);
+			
+			assertEqual(fadeOut, [0]);
+			assertEqual(stopped, 2);
+		});
+		
+		test('fade out, after', function() {
+			stage.start([]);
+			var update = stage.stop(1000);
+			update(1500);
+			
+			assertEqual(fadeOut, [0]);
+			assertEqual(stopped, 2);
+		});
+		
+		test('replace scene, without fading', function() {
+			stage.start([{ type: 'image', url: 'image/1' }]);
+			stage.start([{ type: 'image', url: 'image/2' }]);
+			
+			assertEqual(started, 2)
+			assertEqual(stopped, 2);
+		});
+		
+		test('replace scene, with fading, before', function() {
+			stage.start([{ type: 'image', url: 'image/1' }]);
+			stage.start([{ type: 'image', url: 'image/2' }], 1000);
+			
+			assertEqual(fadeOut, []);
+			assertEqual(fadeIn, []);
+		});
+		
+		test('replace scene, with fading, beginning', function() {
+			stage.start([{ type: 'image', url: 'image/1' }]);
+			var update = stage.start([{ type: 'image', url: 'image/2' }], 1000);
+			update(0);
+			
+			assertEqual(fadeOut, [1]);
+			assertEqual(fadeIn, [0]);
+		});
+		
+		test('replace scene, with fading, middle', function() {
+			stage.start([{ type: 'image', url: 'image/1' }]);
+			var update = stage.start([{ type: 'image', url: 'image/2' }], 1000);
+			update(500);
+			
+			assertEqual(fadeOut, [0.5]);
+			assertEqual(fadeIn, [0.5]);
+		});
+		
+		test('replace scene, with fading, end', function() {
+			stage.start([{ type: 'image', url: 'image/1' }]);
+			var update = stage.start([{ type: 'image', url: 'image/2' }], 1000);
+			update(1000);
+			
+			assertEqual(fadeOut, [0]);
+			assertEqual(fadeIn, [1]);
+			assertEqual(stopped, 2);
+		});
+		
+		test('replace scene, with fading, after', function() {
+			stage.start([{ type: 'image', url: 'image/1' }]);
+			var update = stage.start([{ type: 'image', url: 'image/2' }], 1000);
+			update(1500);
+			
+			assertEqual(fadeOut, [0]);
+			assertEqual(fadeIn, [1]);
+			assertEqual(stopped, 2);
 		});
 	});
 	
 	suite('sound', function() {
-		var scene;
 		var tracks;
-		var audio;
 		// The `tick` below is updated whenever a new track starts and the tests
 		// below always use the latest one.
 		var tick;
+		var start;
+		var stop;
+		var defaultStage;
+		var defaultCallbacks;
 		
 		setup(function() {
-			scene = document.createElement('div');
 			tracks = [];
-			audio = {
-				start: function(url, newTick) {
-					tick = newTick;
-					tracks.push(url);
-					return {
-						duration: function() {
-							return 1;
-						}
-					};
+			defaultCallbacks = {
+				start: {
+					track: function(url, newTick) {
+						tick = newTick;
+						tracks.push(url);
+						return {
+							duration: function() {
+								return 1;
+							}
+						};
+					}
+				},
+				stop: {
+					track: function() {},
+					image: function() {}
 				}
+			};
+			defaultStage = function() {
+				return ambience(defaultCallbacks);
 			};
 		});
 		
 		test('no tracks', function() {
 			assertError(function() {
-				ambience.start.sound({
-					tracks: []
-				}, scene, { audio: audio });
+				var stage = defaultStage();
+				stage.start([{
+					type: 'sound', tracks: []
+				}]);
 			});
 		});
 		
 		test('single track, loop', function() {
-			ambience.start.sound({
-				tracks: ['test'],
+			var stage = defaultStage();
+			stage.start([{
+				type: 'sound', tracks: ['test'],
 				loop: true
-			}, scene, { audio: audio });
+			}]);
 			tick(1);
 			
 			assertEqual(tracks, ['test', 'test']);
 		});
 		
 		test('single track, no loop', function() {
-			ambience.start.sound({
-				tracks: ['test'],
-				loop: false
-			}, scene, { audio: audio });
+			var stage = defaultStage();
+			stage.start([{ type: 'sound', tracks: ['test'], loop: false }]);
 			tick(1);
 			
 			assertEqual(tracks, ['test']);
 		});
 		
 		test('two tracks, loop', function() {
-			ambience.start.sound({
-				tracks: ['one', 'two'],
-				loop: true
-			}, scene, { audio: audio });
+			var stage = defaultStage();
+			stage.start([{ type: 'sound', tracks: ['one', 'two'], loop: true }]);
 			tick(1);
 			tick(1);
 			tick(1);
@@ -281,10 +294,8 @@ suite('ambience', function() {
 		});
 		
 		test('two tracks, no loop', function() {
-			ambience.start.sound({
-				tracks: ['one', 'two'],
-				loop: false
-			}, scene, { audio: audio });
+			var stage = defaultStage();
+			stage.start([{ type: 'sound', tracks: ['one', 'two'], loop: false }]);
 			tick(1);
 			tick(1);
 			tick(1);
@@ -297,10 +308,8 @@ suite('ambience', function() {
 		// one is scheduled later and using a different method and thus fails",
 		// so we try with three tracks to be on the safe side.
 		test('three tracks, loop', function() {
-			ambience.start.sound({
-				tracks: ['one', 'two', 'three'],
-				loop: true
-			}, scene, { audio: audio });
+			var stage = defaultStage();
+			stage.start([{ type: 'sound', tracks: ['one', 'two', 'three'], loop: true }]);
 			tick(1);
 			tick(1);
 			tick(1);
@@ -311,10 +320,8 @@ suite('ambience', function() {
 		});
 		
 		test('three tracks, no loop', function() {
-			ambience.start.sound({
-				tracks: ['one', 'two', 'three'],
-				loop: false
-			}, scene, { audio: audio });
+			var stage = defaultStage();
+			stage.start([{ type: 'sound', tracks: ['one', 'two', 'three'], loop: false }]);
 			tick(1);
 			tick(1);
 			tick(1);
@@ -323,33 +330,24 @@ suite('ambience', function() {
 		});
 		
 		test('single track, loop, overlap', function() {
-			ambience.start.sound({
-				tracks: ['test'],
-				loop: true,
-				overlap: 0.2
-			}, scene, { audio: audio });
+			var stage = defaultStage();
+			stage.start([{ type: 'sound', tracks: ['test'], loop: true, overlap: 0.2 }]);
 			tick(0.8);
 			
 			assertEqual(tracks, ['test', 'test']);
 		});
 		
 		test('single track, no loop, overlap', function() {
-			ambience.start.sound({
-				tracks: ['test'],
-				loop: false,
-				overlap: 0.2
-			}, scene, { audio: audio });
+			var stage = defaultStage();
+			stage.start([{ type: 'sound', tracks: ['test'], loop: false, overlap: 0.2 }]);
 			tick(0.8);
 			
 			assertEqual(tracks, ['test']);
 		});
 		
 		test('single overlap regardless of number of ticks', function() {
-			var firstTick = ambience.start.sound({
-				tracks: ['one'],
-				loop: true,
-				overlap: 0.2
-			}, scene, { audio: audio });
+			var stage = defaultStage();
+			var firstTick = stage.start([{ type: 'sound', tracks: ['one'], loop: true, overlap: 0.2 }]);
 			firstTick(0.81);
 			firstTick(0.82);
 			firstTick(0.83);
@@ -358,44 +356,42 @@ suite('ambience', function() {
 		});
 		
 		test('single track, no loop, shuffle', function() {
-			ambience.start.sound({
-				tracks: ['test'],
-				loop: false,
-				shuffle: true
-			}, scene, { audio: audio });
+			var stage = defaultStage();
+			stage.start([{ type: 'sound', tracks: ['test'], loop: false, shuffle: true }]);
 			
 			tick(1);
 			assertEqual(tracks, ['test']);
 		});
 		
 		test('single track, loop, shuffle', function() {
-			ambience.start.sound({
-				tracks: ['test'],
-				loop: true,
-				shuffle: true
-			}, scene, { audio: audio });
+			var stage = defaultStage();
+			stage.start([{ type: 'sound', tracks: ['test'], loop: true, shuffle: true }]);
 			
 			tick(1);
 			assertEqual(tracks, ['test', 'test']);
 		});
 		
 		test('two tracks, no loop, shuffle', function() {
-			ambience.start.sound({
-				tracks: ['one', 'two'],
-				loop: false,
-				shuffle: true
-			}, scene, { audio: audio, shuffle: constant(['two', 'one']) });
+			var callbacks = extend(
+				defaultStage(),
+				'shuffle',
+				constant(['two', 'one'])
+			);
+			var stage = ambience(callbacks);
+			stage.start([{ type: 'sound', tracks: ['one', 'two'], loop: false, shuffle: true }]);
 			
 			tick(1);
 			assertEqual(tracks, ['two', 'one']);
 		});
 		
 		test('two tracks, loop, shuffle', function() {
-			ambience.start.sound({
-				tracks: ['one', 'two'],
-				loop: false,
-				shuffle: true
-			}, scene, { audio: audio, shuffle: constant(['two', 'one']) });
+			var callbacks = extend(
+				defaultStage(),
+				'shuffle',
+				constant(['two', 'one'])
+			);
+			var stage = ambience.callbacks();
+			stage.start([{ type: 'sound', tracks: ['one', 'two'], loop: true, shuffle: true }]);
 			
 			tick(1);
 			assertEqual(tracks, ['two', 'one']);
@@ -415,12 +411,10 @@ suite('ambience', function() {
 					throw new Error('Tracks shuffled too many times.');
 				}
 			};
+			var callbacks = extend(defaultStage(), 'shuffle', shuffle);
+			var stage = ambience(callbacks);
 			
-			ambience.start.sound({
-				tracks: ['one', 'two'],
-				loop: true,
-				shuffle: true
-			}, scene, { audio: audio, shuffle: shuffle });
+			stage.start([{ type: 'sound', tracks: ['one', 'two'], loop: true, shuffle: true }]);
 			
 			tick(1);
 			tick(1);
