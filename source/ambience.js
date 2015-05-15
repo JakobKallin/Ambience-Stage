@@ -4,13 +4,13 @@ var ambience = function(outside) {
 	function startScene(items, fade) {
 		var updatePrevious = stopScene(fade, outside);
 		
+		var updateSound = function() {};
 		items.forEach(function(item) {
 			if ( item.type === 'image' ) {
 				startImage(item);
 			}
 			else if ( item.type === 'sound' ) {
-				return;
-				startSound(item);
+				updateSound = startSound(item);
 			}
 			else {
 				throw new Error('Unrecognized media type: "' + item.type + '".');
@@ -22,62 +22,51 @@ var ambience = function(outside) {
 		}
 		
 		function startSound(sound) {
-			var tracks = sound.tracks.slice();
 			var loop = 'loop' in sound ? sound.loop : true;
 			var shuffle = 'shuffle' in sound ? sound.shuffle : true;
 			var overlap = sound.overlap || 0;
-			var audio = outside.audio;
+			var startTrack = outside.start.track;
 			var shuffleArray = outside.shuffle || function(x) { return x; };
 			
+			var tracks = sound.tracks.slice();
 			if ( sound.tracks.length === 0 ) {
 				throw new Error('Cannot start sound without tracks.');
 			} 
-			
 			if ( shuffle ) {
 				tracks = shuffleArray(tracks);
 			}
 			
-			var tick = createTicker();
-			var current = {
-				index: 0,
-				audio: audio.start(tracks[0], tick),
-				tick: tick
-			};
+			var trackStart = -Infinity;
+			var trackDuration = function() { return 0; };
+			var index = -1;
 			
-			return tick;
-			
-			function createTicker() {
-				return function tick(seconds) {
-					if ( current.tick !== tick ) {
-						return;
+			return function updateSound(progress) {
+				var trackElapsed = progress - trackStart;
+				if ( trackElapsed >= trackDuration() - overlap ) {
+					if ( (index + 1) in tracks ) {
+						index += 1;
+						trackDuration = outside.start.track(tracks[index]);
+						trackStart = progress;
 					}
-					
-					if ( seconds >= current.audio.duration() - overlap ) {
-						var nextIndex = null;
-						
-						if ( (current.index + 1) in tracks ) {
-							nextIndex = current.index + 1;
+					else if ( loop ) {
+						index = -1;
+						if ( shuffle ) {
+							tracks = shuffleArray(tracks);
 						}
-						else if ( loop ) {
-							nextIndex = 0;
-							if ( shuffle ) {
-								tracks = shuffleArray(tracks);
-							}
-						}
-						
-						if ( nextIndex !== null ) {
-							current.tick = createTicker();
-							current.index = nextIndex;
-							current.audio = audio.start(tracks[nextIndex], current.tick);
-						}
+						updateSound(progress);
 					}
 				}
-			}
+			};
+		}
+		
+		function updateFade(progress) {
+			var ratio = updateRatio(progress, fade);
+			outside.fade.in(ratio);
 		}
 		
 		return function update(progress) {
-			var ratio = updateRatio(progress, fade);
-			outside.fade.in(ratio);
+			updateFade(progress);
+			updateSound(progress);
 			updatePrevious(progress);
 		};
 	}

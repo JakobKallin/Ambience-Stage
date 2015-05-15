@@ -43,6 +43,8 @@ suite('ambience', function() {
 		return newObject;
 	}
 	
+	function nothing() {}
+	
 	suite('helpers', function() {
 		test('chain extract and collect', function() {
 			var urls = [];
@@ -235,19 +237,20 @@ suite('ambience', function() {
 			tracks = [];
 			defaultCallbacks = {
 				start: {
-					track: function(url, newTick) {
-						tick = newTick;
+					track: function(url) {
 						tracks.push(url);
-						return {
-							duration: function() {
-								return 1;
-							}
+						return function duration() {
+							return 1;
 						};
 					}
 				},
 				stop: {
-					track: function() {},
-					image: function() {}
+					track: nothing,
+					image: nothing
+				},
+				fade: {
+					in: nothing,
+					out: nothing
 				}
 			};
 			defaultStage = function() {
@@ -259,46 +262,75 @@ suite('ambience', function() {
 			assertError(function() {
 				var stage = defaultStage();
 				stage.start([{
-					type: 'sound', tracks: []
+					type: 'sound',
+					tracks: []
 				}]);
 			});
 		});
 		
+		test('single track', function() {
+			var stage = defaultStage();
+			var update = stage.start([{
+				type: 'sound',
+				tracks: ['test']
+			}]);
+			update(0);
+			
+			assertEqual(tracks, ['test']);
+		});
+		
 		test('single track, loop', function() {
 			var stage = defaultStage();
-			stage.start([{
-				type: 'sound', tracks: ['test'],
+			var update = stage.start([{
+				type: 'sound',
+				tracks: ['test'],
 				loop: true
 			}]);
-			tick(1);
+			update(0);
+			update(1);
 			
 			assertEqual(tracks, ['test', 'test']);
 		});
 		
 		test('single track, no loop', function() {
 			var stage = defaultStage();
-			stage.start([{ type: 'sound', tracks: ['test'], loop: false }]);
-			tick(1);
+			var update = stage.start([{
+				type: 'sound',
+				tracks: ['test'],
+				loop: false
+			}]);
+			update(0);
+			update(1);
 			
 			assertEqual(tracks, ['test']);
 		});
 		
 		test('two tracks, loop', function() {
 			var stage = defaultStage();
-			stage.start([{ type: 'sound', tracks: ['one', 'two'], loop: true }]);
-			tick(1);
-			tick(1);
-			tick(1);
+			var update = stage.start([{
+				type: 'sound',
+				tracks: ['one', 'two'],
+				loop: true
+			}]);
+			update(0);
+			update(1);
+			update(2);
+			update(3);
 			
 			assertEqual(tracks, ['one', 'two', 'one', 'two']);
 		});
 		
 		test('two tracks, no loop', function() {
 			var stage = defaultStage();
-			stage.start([{ type: 'sound', tracks: ['one', 'two'], loop: false }]);
-			tick(1);
-			tick(1);
-			tick(1);
+			var update = stage.start([{
+				type: 'sound',
+				tracks: ['one', 'two'],
+				loop: false
+			}]);
+			update(0);
+			update(1);
+			update(2);
+			update(3);
 			
 			assertEqual(tracks, ['one', 'two']);
 		});
@@ -309,91 +341,143 @@ suite('ambience', function() {
 		// so we try with three tracks to be on the safe side.
 		test('three tracks, loop', function() {
 			var stage = defaultStage();
-			stage.start([{ type: 'sound', tracks: ['one', 'two', 'three'], loop: true }]);
-			tick(1);
-			tick(1);
-			tick(1);
-			tick(1);
-			tick(1);
+			var update = stage.start([{
+				type: 'sound',
+				tracks: ['one', 'two', 'three'],
+				loop: true
+			}]);
+			update(0);
+			update(1);
+			update(2);
+			update(3);
+			update(4);
+			update(5);
 			
 			assertEqual(tracks, ['one', 'two', 'three', 'one', 'two', 'three']);
 		});
 		
 		test('three tracks, no loop', function() {
 			var stage = defaultStage();
-			stage.start([{ type: 'sound', tracks: ['one', 'two', 'three'], loop: false }]);
-			tick(1);
-			tick(1);
-			tick(1);
+			var update = stage.start([{
+				type: 'sound',
+				tracks: ['one', 'two', 'three'],
+				loop: false
+			}]);
+			update(0);
+			update(1);
+			update(2);
+			update(3);
 			
 			assertEqual(tracks, ['one', 'two', 'three']);
 		});
 		
 		test('single track, loop, overlap', function() {
 			var stage = defaultStage();
-			stage.start([{ type: 'sound', tracks: ['test'], loop: true, overlap: 0.2 }]);
-			tick(0.8);
+			var update = stage.start([{
+				type: 'sound',
+				tracks: ['test'],
+				loop: true,
+				overlap: 0.2
+			}]);
+			update(0);
+			update(0.8);
 			
 			assertEqual(tracks, ['test', 'test']);
 		});
 		
 		test('single track, no loop, overlap', function() {
 			var stage = defaultStage();
-			stage.start([{ type: 'sound', tracks: ['test'], loop: false, overlap: 0.2 }]);
-			tick(0.8);
+			var update = stage.start([{
+				type: 'sound',
+				tracks: ['test'],
+				loop: false,
+				overlap: 0.2
+			}]);
+			update(0);
+			update(0.8);
 			
 			assertEqual(tracks, ['test']);
 		});
 		
 		test('single overlap regardless of number of ticks', function() {
 			var stage = defaultStage();
-			var firstTick = stage.start([{ type: 'sound', tracks: ['one'], loop: true, overlap: 0.2 }]);
-			firstTick(0.81);
-			firstTick(0.82);
-			firstTick(0.83);
+			var update = stage.start([{
+				type: 'sound',
+				tracks: ['one'],
+				loop: true,
+				overlap: 0.2
+			}]);
+			update(0);
+			update(0.81);
+			update(0.82);
+			update(0.83);
 			
 			assertEqual(tracks, ['one', 'one']);
 		});
 		
 		test('single track, no loop, shuffle', function() {
 			var stage = defaultStage();
-			stage.start([{ type: 'sound', tracks: ['test'], loop: false, shuffle: true }]);
+			var update = stage.start([{
+				type: 'sound',
+				tracks: ['test'],
+				loop: false,
+				shuffle: true
+			}]);
+			update(0);
+			update(1);
 			
-			tick(1);
 			assertEqual(tracks, ['test']);
 		});
 		
 		test('single track, loop, shuffle', function() {
 			var stage = defaultStage();
-			stage.start([{ type: 'sound', tracks: ['test'], loop: true, shuffle: true }]);
+			var update = stage.start([{
+				type: 'sound',
+				tracks: ['test'],
+				loop: true,
+				shuffle: true
+			}]);
+			update(0);
+			update(1);
 			
-			tick(1);
 			assertEqual(tracks, ['test', 'test']);
 		});
 		
 		test('two tracks, no loop, shuffle', function() {
 			var callbacks = extend(
-				defaultStage(),
+				defaultCallbacks,
 				'shuffle',
 				constant(['two', 'one'])
 			);
 			var stage = ambience(callbacks);
-			stage.start([{ type: 'sound', tracks: ['one', 'two'], loop: false, shuffle: true }]);
+			var update = stage.start([{
+				type: 'sound',
+				tracks: ['one', 'two'],
+				loop: false,
+				shuffle: true
+			}]);
+			update(0);
+			update(1);
 			
-			tick(1);
 			assertEqual(tracks, ['two', 'one']);
 		});
 		
 		test('two tracks, loop, shuffle', function() {
 			var callbacks = extend(
-				defaultStage(),
+				defaultCallbacks,
 				'shuffle',
 				constant(['two', 'one'])
 			);
-			var stage = ambience.callbacks();
-			stage.start([{ type: 'sound', tracks: ['one', 'two'], loop: true, shuffle: true }]);
+			var stage = ambience(callbacks);
+			var update = stage.start([{
+				type: 'sound',
+				tracks: ['one', 'two'],
+				loop: true,
+				shuffle: true
+			}]);
+			update(0);
+			update(1);
 			
-			tick(1);
 			assertEqual(tracks, ['two', 'one']);
 		});
 		
@@ -411,14 +495,20 @@ suite('ambience', function() {
 					throw new Error('Tracks shuffled too many times.');
 				}
 			};
-			var callbacks = extend(defaultStage(), 'shuffle', shuffle);
+			var callbacks = extend(defaultCallbacks, 'shuffle', shuffle);
 			var stage = ambience(callbacks);
 			
-			stage.start([{ type: 'sound', tracks: ['one', 'two'], loop: true, shuffle: true }]);
+			var update = stage.start([{
+				type: 'sound',
+				tracks: ['one', 'two'],
+				loop: true,
+				shuffle: true
+			}]);
+			update(0);
+			update(1);
+			update(2);
+			update(3);
 			
-			tick(1);
-			tick(1);
-			tick(1);
 			assertEqual(tracks, ['two', 'one', 'one', 'two']);
 		});
 		
