@@ -1,10 +1,13 @@
 'use strict';
 
 var ambience = function(outside) {
+	var updateFade = function() {};
+	var updateSound = function() {};
+	var updatePrevious = function() {};
+	
 	function startScene(items, fade) {
-		var updatePrevious = stopScene(fade, outside);
+		updatePrevious = stopScene(fade, outside);
 		
-		var updateSound = function() {};
 		items.forEach(function(item) {
 			if ( item.type === 'image' ) {
 				startImage(item);
@@ -59,47 +62,50 @@ var ambience = function(outside) {
 			};
 		}
 		
-		function updateFade(progress) {
-			var ratio = updateRatio(progress, fade);
-			outside.fade.in(ratio);
+		updateFade = function(progress) {
+			var ratio = fadeRatio(progress, fade);
+			if ( typeof ratio !== 'number' || isNaN(ratio) ) {
+				throw new Error('Fade ratio was incorrectly computed as NaN.');
+			}
+			else {
+				outside.fade.in(ratio);
+			}
 		}
-		
-		return function update(progress) {
-			updateFade(progress);
-			updateSound(progress);
-			updatePrevious(progress);
-		};
 	}
 	
 	function stopScene(fade) {
-		stopImage();
-		
-		function stopImage() {
-			outside.stop.image();
-		}
+		outside.stop.image();
 		
 		return function update(progress) {
-			var ratio = 1 - updateRatio(progress, fade);
+			var ratio = 1 - fadeRatio(progress, fade);
 			outside.fade.out(ratio);
 		};
 	}
 	
-	function updateRatio(progress, ceiling) {
-		var ratio = progress / ceiling;
-		var boundedRatio = Math.min(Math.max(ratio, 0), 1)
-		return boundedRatio;
+	function fadeRatio(progress, ceiling) {
+		if ( ceiling === 0 ) {
+			return 1;
+		}
+		else {
+			var ratio = progress / ceiling;
+			var boundedRatio = Math.min(Math.max(ratio, 0), 1)
+			return boundedRatio;
+		}
 	}
 	
 	return {
-		start: function(items) {
+		start: function start(items) {
 			var fade = arguments[1] || 0;
-			
-			return startScene(items, fade);
+			startScene(items, fade);
 		},
-		stop: function() {
+		stop: function stop() {
 			var fade = arguments[0] || 0;
-			
-			return stopScene(fade);
+			updatePrevious = stopScene(fade);
+		},
+		update: function update(progress) {
+			updateFade(progress);
+			updateSound(progress);
+			updatePrevious(progress);
 		}
 	};
 };
