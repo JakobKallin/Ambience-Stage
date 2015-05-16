@@ -39,31 +39,33 @@ var ambience = function(outside) {
 				tracks = shuffleArray(tracks);
 			}
 			
-			var trackStart = -Infinity;
+			var trackElapsed = 0;
 			var trackDuration = function() { return 0; };
 			var index = -1;
 			
-			return function updateSound(progress) {
-				var trackElapsed = progress - trackStart;
+			return function updateSound(increase) {
+				trackElapsed += increase;
 				if ( trackElapsed >= trackDuration() - overlap ) {
 					if ( (index + 1) in tracks ) {
 						index += 1;
 						trackDuration = outside.start.track(tracks[index]);
-						trackStart = progress;
+						trackElapsed = 0;
 					}
 					else if ( loop ) {
 						index = -1;
 						if ( shuffle ) {
 							tracks = shuffleArray(tracks);
 						}
-						updateSound(progress);
+						updateSound(increase);
 					}
 				}
 			};
 		}
 		
-		updateFade = function(progress) {
-			var ratio = fadeRatio(progress, fade);
+		var fadeTime = 0;
+		updateFade = function(increase) {
+			fadeTime += increase;
+			var ratio = fadeRatio(fadeTime, fade);
 			if ( typeof ratio !== 'number' || isNaN(ratio) ) {
 				throw new Error('Fade ratio was incorrectly computed as NaN.');
 			}
@@ -76,8 +78,10 @@ var ambience = function(outside) {
 	function stopScene(fade) {
 		outside.stop.image();
 		
-		return function update(progress) {
-			var ratio = 1 - fadeRatio(progress, fade);
+		var fadeTime = 0;
+		return function update(increase) {
+			fadeTime += increase;
+			var ratio = 1 - fadeRatio(fadeTime, fade);
 			outside.fade.out(ratio);
 		};
 	}
@@ -102,10 +106,10 @@ var ambience = function(outside) {
 			var fade = arguments[0] || 0;
 			updatePrevious = stopScene(fade);
 		},
-		update: function update(progress) {
-			updateFade(progress);
-			updateSound(progress);
-			updatePrevious(progress);
+		update: function update(increase) {
+			updateFade(increase);
+			updateSound(increase);
+			updatePrevious(increase);
 		}
 	};
 };

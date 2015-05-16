@@ -168,6 +168,15 @@ suite('ambience', function() {
 			assertEqual(stopped, 2);
 		});
 		
+		test('fade in twice, middle', function() {
+			stage.start([fixture.image()], 1000);
+			stage.update(1500);
+			stage.start([fixture.image()], 1000);
+			stage.update(500);
+			
+			assertEqual(fadeIn, [1, 0.5]);
+		});
+		
 		test('replace scene, without fading', function() {
 			stage.start([{ type: 'image', url: 'image/1' }]);
 			stage.start([{ type: 'image', url: 'image/2' }]);
@@ -314,8 +323,8 @@ suite('ambience', function() {
 			}]);
 			stage.update(0);
 			stage.update(1);
-			stage.update(2);
-			stage.update(3);
+			stage.update(1);
+			stage.update(1);
 			
 			assertEqual(tracks, ['one', 'two', 'one', 'two']);
 		});
@@ -329,8 +338,8 @@ suite('ambience', function() {
 			}]);
 			stage.update(0);
 			stage.update(1);
-			stage.update(2);
-			stage.update(3);
+			stage.update(1);
+			stage.update(1);
 			
 			assertEqual(tracks, ['one', 'two']);
 		});
@@ -348,10 +357,10 @@ suite('ambience', function() {
 			}]);
 			stage.update(0);
 			stage.update(1);
-			stage.update(2);
-			stage.update(3);
-			stage.update(4);
-			stage.update(5);
+			stage.update(1);
+			stage.update(1);
+			stage.update(1);
+			stage.update(1);
 			
 			assertEqual(tracks, ['one', 'two', 'three', 'one', 'two', 'three']);
 		});
@@ -365,8 +374,8 @@ suite('ambience', function() {
 			}]);
 			stage.update(0);
 			stage.update(1);
-			stage.update(2);
-			stage.update(3);
+			stage.update(1);
+			stage.update(1);
 			
 			assertEqual(tracks, ['one', 'two', 'three']);
 		});
@@ -409,8 +418,8 @@ suite('ambience', function() {
 			}]);
 			stage.update(0);
 			stage.update(0.81);
-			stage.update(0.82);
-			stage.update(0.83);
+			stage.update(0.01);
+			stage.update(0.01);
 			
 			assertEqual(tracks, ['one', 'one']);
 		});
@@ -506,8 +515,8 @@ suite('ambience', function() {
 			}]);
 			stage.update(0);
 			stage.update(1);
-			stage.update(2);
-			stage.update(3);
+			stage.update(1);
+			stage.update(1);
 			
 			assertEqual(tracks, ['two', 'one', 'one', 'two']);
 		});
