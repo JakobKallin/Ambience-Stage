@@ -7,30 +7,9 @@ suite('ambience', function() {
 	
 	var ambience = window.ambience;
 	
-	var fixture = {
-		image: function() {
-			return { type: 'image', url: 'image' };
-		},
-		sound: function() {
-			return { type: 'sound', tracks: ['example/sound'] };
-		}
-	};
-	
 	function collect(target) {
 		return function(value) {
 			target.push(value);
-		};
-	}
-	
-	function chain(f1, f2) {
-		return function(x) {
-			return f2(f1(x));
-		};
-	}
-	
-	function extract(property) {
-		return function(object) {
-			return object[property];
 		};
 	}
 	
@@ -44,15 +23,6 @@ suite('ambience', function() {
 	}
 	
 	function nothing() {}
-	
-	suite('helpers', function() {
-		test('chain extract and collect', function() {
-			var urls = [];
-			var composite = chain(extract('url'), collect(urls));
-			composite({ url: 'test' });
-			assertEqual(urls, ['test']);
-		});
-	});
 	
 	suite('scene', function() {
 		var started;
@@ -80,13 +50,13 @@ suite('ambience', function() {
 		});
 		
 		test('start scene', function() {
-			stage.start([fixture.image()]);
+			stage.start([{ type: 'image', url: 'image' }]);
 			
 			assertEqual(started, 1);
 		});
 		
 		test('stop scene', function() {
-			stage.start([fixture.image()]);
+			stage.start([{ type: 'image', url: 'image' }]);
 			stage.stop();
 			
 			// One indirectly from calling `start`, one directly from calling `stop`.
@@ -169,9 +139,9 @@ suite('ambience', function() {
 		});
 		
 		test('fade in twice, middle', function() {
-			stage.start([fixture.image()], 1000);
+			stage.start([{ type: 'image', url: 'image' }], 1000);
 			stage.update(1500);
-			stage.start([fixture.image()], 1000);
+			stage.start([{ type: 'image', url: 'image' }], 1000);
 			stage.update(500);
 			
 			assertEqual(fadeIn, [1, 0.5]);
