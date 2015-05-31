@@ -97,19 +97,24 @@ var ambience = function(outside) {
 		}
 	}
 	
+	function start(items, fade) {
+		fade = fade || 0;
+		startScene(items, fade);
+		
+		return {
+			start: start,
+			update: update
+		};
+	}
+	
+	function update(increase) {
+		updateFade(increase);
+		updateSound(increase);
+		updatePrevious(increase);
+	}
+	
 	return {
-		start: function start(items) {
-			var fade = arguments[1] || 0;
-			startScene(items, fade);
-		},
-		stop: function stop() {
-			var fade = arguments[0] || 0;
-			updatePrevious = stopScene(fade);
-		},
-		update: function update(increase) {
-			updateFade(increase);
-			updateSound(increase);
-			updatePrevious(increase);
-		}
+		start: start,
+		update: update
 	};
 };

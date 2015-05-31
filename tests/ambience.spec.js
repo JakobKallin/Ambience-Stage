@@ -24,6 +24,28 @@ suite('ambience', function() {
 	
 	function nothing() {}
 	
+	function statefulStage(callbacks) {
+		var handle = ambience(callbacks);
+		
+		return {
+			start: start,
+			stop: stop,
+			update: update
+		};
+		
+		function start(items, fade) {
+			handle = handle.start(items, fade);
+		}
+		
+		function stop(fade) {
+			start([], fade);
+		}
+		
+		function update(increase) {
+			handle.update(increase);
+		}
+	}
+	
 	suite('scene', function() {
 		var started;
 		var stopped;
@@ -46,7 +68,7 @@ suite('ambience', function() {
 				}
 			};
 			
-			stage = ambience(callbacks);
+			stage = statefulStage(callbacks);
 		});
 		
 		test('start scene', function() {
@@ -233,7 +255,7 @@ suite('ambience', function() {
 				}
 			};
 			defaultStage = function() {
-				return ambience(defaultCallbacks);
+				return statefulStage(defaultCallbacks);
 			};
 		});
 		
