@@ -1,34 +1,35 @@
 'use strict';
 
 var ambience = function(outside) {
-	var updateFade = function() {};
-	var updateSound = function() {};
-	var updatePrevious = function() {};
-	
-	function startScene(items, fade) {
-		updatePrevious = stopScene(fade, outside);
+	function start(items, fade) {
+		fade = fade || 0;
 		
-		items.forEach(function(item) {
+		var handles = items.map(startItem);
+		
+		function startItem(item) {
 			if ( item.type === 'image' ) {
-				startImage(item);
+				return startImage(item);	
 			}
 			else if ( item.type === 'sound' ) {
-				updateSound = startSound(item);
+				return startSound(item);
 			}
 			else {
-				throw new Error('Unrecognized media type: "' + item.type + '".');
+				throw new Error('Unsupported media type: ' + item.type + '.');
 			}
-		});
+		}
 		
 		function startImage(image) {
-			outside.start.image(image);
+			var stop = outside.start.image(image);
+			return {
+			    update: nothing,
+				stop: stop
+			};
 		}
 		
 		function startSound(sound) {
 			var loop = 'loop' in sound ? sound.loop : true;
 			var shuffle = 'shuffle' in sound ? sound.shuffle : true;
 			var overlap = sound.overlap || 0;
-			var startTrack = outside.start.track;
 			var shuffleArray = outside.shuffle || function(x) { return x; };
 			
 			var tracks = sound.tracks.slice();
@@ -41,48 +42,64 @@ var ambience = function(outside) {
 			
 			var trackElapsed = 0;
 			var trackDuration = function() { return 0; };
-			var index = -1;
+			var trackIndex = -1;
 			
-			return function updateSound(increase) {
+			var update = function(increase) {
 				trackElapsed += increase;
 				if ( trackElapsed >= trackDuration() - overlap ) {
-					if ( (index + 1) in tracks ) {
-						index += 1;
-						trackDuration = outside.start.track(tracks[index]);
+					if ( (trackIndex + 1) in tracks ) {
+						trackIndex += 1;
+						trackDuration = outside.start.track(tracks[trackIndex]).duration;
 						trackElapsed = 0;
 					}
 					else if ( loop ) {
-						index = -1;
+						trackIndex = -1;
 						if ( shuffle ) {
 							tracks = shuffleArray(tracks);
 						}
-						updateSound(increase);
+						update(increase);
 					}
 				}
 			};
+			
+		    return {
+				update: update,
+				stop: nothing
+			};
 		}
 		
-		var fadeTime = 0;
-		updateFade = function(increase) {
-			fadeTime += increase;
-			var ratio = fadeRatio(fadeTime, fade);
+		function update(increase) {
+			updateFade(increase);
+			handles.forEach(function(handle) {
+			    handle.update(increase);
+			});
+		};
+		
+		var fadeElapsed = 0;
+		function updateFade(increase) {
+			fadeElapsed += increase;
+			var ratio = fadeRatio(fadeElapsed, fade);
 			if ( typeof ratio !== 'number' || isNaN(ratio) ) {
 				throw new Error('Fade ratio was incorrectly computed as NaN.');
 			}
 			else {
 				outside.fade.in(ratio);
+				outside.fade.out(1 - ratio);
 			}
-		}
-	}
-	
-	function stopScene(fade) {
-		outside.stop.image();
+		};
 		
-		var fadeTime = 0;
-		return function update(increase) {
-			fadeTime += increase;
-			var ratio = 1 - fadeRatio(fadeTime, fade);
-			outside.fade.out(ratio);
+		function stop() {
+		    handles.forEach(function(handle) {
+		        handle.stop();
+		    });
+		}
+		
+		return {
+			start: function(items, fade) {
+			    stop();
+				return start(items, fade);
+			},
+			update: update
 		};
 	}
 	
@@ -97,24 +114,9 @@ var ambience = function(outside) {
 		}
 	}
 	
-	function start(items, fade) {
-		fade = fade || 0;
-		startScene(items, fade);
-		
-		return {
-			start: start,
-			update: update
-		};
-	}
-	
-	function update(increase) {
-		updateFade(increase);
-		updateSound(increase);
-		updatePrevious(increase);
-	}
+	function nothing() {}
 	
 	return {
-		start: start,
-		update: update
+		start: start
 	};
 };

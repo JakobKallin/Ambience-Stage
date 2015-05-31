@@ -54,14 +54,20 @@ suite('ambience', function() {
 		var stage;
 		
 		setup(function() {
-			started = 0;
-			stopped = 0;
+			started = [];
+			stopped = [];
 			fadeIn = [];
 			fadeOut = [];
 			
 			var callbacks = {
-				start: { image: function() { started += 1; } },
-				stop: { image: function() { stopped += 1; } },
+				start: {
+					image: function(image) {
+						started.push(image.url);
+						return function stop() {
+							stopped.push(image.url);
+						};
+					}
+				},
 				fade: {
 					in: collect(fadeIn),
 					out: collect(fadeOut)
@@ -74,7 +80,7 @@ suite('ambience', function() {
 		test('start scene', function() {
 			stage.start([{ type: 'image', url: 'image' }]);
 			
-			assertEqual(started, 1);
+			assertEqual(started, ['image']);
 		});
 		
 		test('stop scene', function() {
@@ -82,7 +88,7 @@ suite('ambience', function() {
 			stage.stop();
 			
 			// One indirectly from calling `start`, one directly from calling `stop`.
-			assertEqual(stopped, 2);
+			assertEqual(stopped, ['image']);
 		});
 		
 		test('fade in, before', function() {
@@ -143,21 +149,21 @@ suite('ambience', function() {
 		});
 		
 		test('fade out, end', function() {
-			stage.start([]);
+			stage.start([{ type: 'image', url: 'image' }]);
 			stage.stop(1000);
 			stage.update(1000);
 			
 			assertEqual(fadeOut, [0]);
-			assertEqual(stopped, 2);
+			assertEqual(stopped, ['image']);
 		});
 		
 		test('fade out, after', function() {
-			stage.start([]);
+			stage.start([{ type: 'image', url: 'image' }]);
 			stage.stop(1000);
 			stage.update(1500);
 			
 			assertEqual(fadeOut, [0]);
-			assertEqual(stopped, 2);
+			assertEqual(stopped, ['image']);
 		});
 		
 		test('fade in twice, middle', function() {
@@ -173,8 +179,8 @@ suite('ambience', function() {
 			stage.start([{ type: 'image', url: 'image/1' }]);
 			stage.start([{ type: 'image', url: 'image/2' }]);
 			
-			assertEqual(started, 2)
-			assertEqual(stopped, 2);
+			assertEqual(started, ['image/1', 'image/2'])
+			assertEqual(stopped, ['image/1']);
 		});
 		
 		test('replace scene, with fading, before', function() {
@@ -210,7 +216,7 @@ suite('ambience', function() {
 			
 			assertEqual(fadeOut, [0]);
 			assertEqual(fadeIn, [1]);
-			assertEqual(stopped, 2);
+			assertEqual(stopped, ['image/1']);
 		});
 		
 		test('replace scene, with fading, after', function() {
@@ -220,7 +226,26 @@ suite('ambience', function() {
 			
 			assertEqual(fadeOut, [0]);
 			assertEqual(fadeIn, [1]);
-			assertEqual(stopped, 2);
+			assertEqual(stopped, ['image/1']);
+		});
+		
+		test('multiple media, start', function() {
+			stage.start([
+				{ type: 'image', url: 'image/1' },
+				{ type: 'image', url: 'image/2' }
+			]);
+			
+			assertEqual(started, ['image/1', 'image/2']);
+		});
+		
+		test('multiple media, stop', function() {
+			stage.start([
+				{ type: 'image', url: 'image/1' },
+				{ type: 'image', url: 'image/2' }
+			]);
+			stage.stop();
+			
+			assertEqual(stopped, ['image/1', 'image/2']);
 		});
 	});
 	
@@ -240,14 +265,13 @@ suite('ambience', function() {
 				start: {
 					track: function(url) {
 						tracks.push(url);
-						return function duration() {
-							return 1;
+						return {
+							stop: nothing,
+							duration: function() {
+								return 1;
+							}
 						};
 					}
-				},
-				stop: {
-					track: nothing,
-					image: nothing
 				},
 				fade: {
 					in: nothing,
@@ -450,7 +474,7 @@ suite('ambience', function() {
 				'shuffle',
 				constant(['two', 'one'])
 			);
-			var stage = ambience(callbacks);
+			var stage = statefulStage(callbacks);
 			stage.start([{
 				type: 'sound',
 				tracks: ['one', 'two'],
@@ -469,7 +493,7 @@ suite('ambience', function() {
 				'shuffle',
 				constant(['two', 'one'])
 			);
-			var stage = ambience(callbacks);
+			var stage = statefulStage(callbacks);
 			stage.start([{
 				type: 'sound',
 				tracks: ['one', 'two'],
@@ -497,7 +521,7 @@ suite('ambience', function() {
 				}
 			};
 			var callbacks = extend(defaultCallbacks, 'shuffle', shuffle);
-			var stage = ambience(callbacks);
+			var stage = statefulStage(callbacks);
 			
 			stage.start([{
 				type: 'sound',
