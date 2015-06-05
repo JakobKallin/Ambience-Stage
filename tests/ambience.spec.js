@@ -250,7 +250,8 @@ suite('ambience', function() {
 	});
 	
 	suite('sound', function() {
-		var tracks;
+		var started;
+		var stopped;
 		// The `tick` below is updated whenever a new track starts and the tests
 		// below always use the latest one.
 		var tick;
@@ -260,13 +261,16 @@ suite('ambience', function() {
 		var defaultCallbacks;
 		
 		setup(function() {
-			tracks = [];
+			started = [];
+			stopped = [];
 			defaultCallbacks = {
 				start: {
 					track: function(url) {
-						tracks.push(url);
+						started.push(url);
 						return {
-							stop: nothing,
+							stop: function() {
+							    stopped.push(url);
+							},
 							duration: function() {
 								return 1;
 							}
@@ -301,7 +305,7 @@ suite('ambience', function() {
 			}]);
 			stage.update(0);
 			
-			assertEqual(tracks, ['test']);
+			assertEqual(started, ['test']);
 		});
 		
 		test('single track, loop', function() {
@@ -314,7 +318,7 @@ suite('ambience', function() {
 			stage.update(0);
 			stage.update(1);
 			
-			assertEqual(tracks, ['test', 'test']);
+			assertEqual(started, ['test', 'test']);
 		});
 		
 		test('single track, no loop', function() {
@@ -327,7 +331,7 @@ suite('ambience', function() {
 			stage.update(0);
 			stage.update(1);
 			
-			assertEqual(tracks, ['test']);
+			assertEqual(started, ['test']);
 		});
 		
 		test('two tracks, loop', function() {
@@ -342,7 +346,7 @@ suite('ambience', function() {
 			stage.update(1);
 			stage.update(1);
 			
-			assertEqual(tracks, ['one', 'two', 'one', 'two']);
+			assertEqual(started, ['one', 'two', 'one', 'two']);
 		});
 		
 		test('two tracks, no loop', function() {
@@ -357,7 +361,7 @@ suite('ambience', function() {
 			stage.update(1);
 			stage.update(1);
 			
-			assertEqual(tracks, ['one', 'two']);
+			assertEqual(started, ['one', 'two']);
 		});
 		
 		// Just testing with two tracks misses error of the type "first track is
@@ -378,7 +382,7 @@ suite('ambience', function() {
 			stage.update(1);
 			stage.update(1);
 			
-			assertEqual(tracks, ['one', 'two', 'three', 'one', 'two', 'three']);
+			assertEqual(started, ['one', 'two', 'three', 'one', 'two', 'three']);
 		});
 		
 		test('three tracks, no loop', function() {
@@ -393,7 +397,7 @@ suite('ambience', function() {
 			stage.update(1);
 			stage.update(1);
 			
-			assertEqual(tracks, ['one', 'two', 'three']);
+			assertEqual(started, ['one', 'two', 'three']);
 		});
 		
 		test('single track, loop, overlap', function() {
@@ -407,7 +411,7 @@ suite('ambience', function() {
 			stage.update(0);
 			stage.update(0.8);
 			
-			assertEqual(tracks, ['test', 'test']);
+			assertEqual(started, ['test', 'test']);
 		});
 		
 		test('single track, no loop, overlap', function() {
@@ -421,7 +425,7 @@ suite('ambience', function() {
 			stage.update(0);
 			stage.update(0.8);
 			
-			assertEqual(tracks, ['test']);
+			assertEqual(started, ['test']);
 		});
 		
 		test('single overlap regardless of number of ticks', function() {
@@ -437,7 +441,7 @@ suite('ambience', function() {
 			stage.update(0.01);
 			stage.update(0.01);
 			
-			assertEqual(tracks, ['one', 'one']);
+			assertEqual(started, ['one', 'one']);
 		});
 		
 		test('single track, no loop, shuffle', function() {
@@ -451,7 +455,7 @@ suite('ambience', function() {
 			stage.update(0);
 			stage.update(1);
 			
-			assertEqual(tracks, ['test']);
+			assertEqual(started, ['test']);
 		});
 		
 		test('single track, loop, shuffle', function() {
@@ -465,7 +469,7 @@ suite('ambience', function() {
 			stage.update(0);
 			stage.update(1);
 			
-			assertEqual(tracks, ['test', 'test']);
+			assertEqual(started, ['test', 'test']);
 		});
 		
 		test('two tracks, no loop, shuffle', function() {
@@ -484,7 +488,7 @@ suite('ambience', function() {
 			stage.update(0);
 			stage.update(1);
 			
-			assertEqual(tracks, ['two', 'one']);
+			assertEqual(started, ['two', 'one']);
 		});
 		
 		test('two tracks, loop, shuffle', function() {
@@ -503,7 +507,7 @@ suite('ambience', function() {
 			stage.update(0);
 			stage.update(1);
 			
-			assertEqual(tracks, ['two', 'one']);
+			assertEqual(started, ['two', 'one']);
 		});
 		
 		test('two tracks, loop, shuffle twice', function() {
@@ -534,7 +538,85 @@ suite('ambience', function() {
 			stage.update(1);
 			stage.update(1);
 			
-			assertEqual(tracks, ['two', 'one', 'one', 'two']);
+			assertEqual(started, ['two', 'one', 'one', 'two']);
+		});
+		
+		test('multiple tracklists, different overlap', function() {
+			var stage = defaultStage();
+			stage.start([
+				{
+					type: 'sound',
+					tracks: ['one'],
+					overlap: 0.2,
+					loop: true
+				},
+				{
+					type: 'sound',
+					tracks: ['two'],
+					overlap: 0.5,
+					loop: true
+				}
+			]);
+			stage.update(0);
+			stage.update(0.5);
+			stage.update(0.3);
+			
+			assertEqual(started, ['one', 'two', 'two', 'one']);
+		});
+		
+		test('track plays during overlap', function() {
+			var stage = defaultStage();
+			stage.start([{
+				type: 'sound',
+				tracks: ['one', 'two'],
+				overlap: 0.2
+			}])
+			stage.update(0);
+			stage.update(0.8);
+			stage.update(0.1);
+			
+			assertEqual(started, ['one', 'two']);
+			assertEqual(stopped, []);
+		});
+		
+		test('track stops after overlap', function() {
+			var stage = defaultStage();
+			stage.start([{
+				type: 'sound',
+				tracks: ['one', 'two'],
+				overlap: 0.2
+			}])
+			stage.update(0);
+			stage.update(0.8);
+			stage.update(0.2);
+			
+			assertEqual(started, ['one', 'two']);
+			assertEqual(stopped, ['one']);
+		});
+		
+		test('last track stops', function() {
+			var stage = defaultStage();
+			stage.start([{
+				type: 'sound',
+				tracks: ['one']
+			}])
+			stage.update(0);
+			stage.update(1);
+			
+			assertEqual(stopped, ['one']);
+		});
+		
+		test('last track stops, loop', function() {
+			var stage = defaultStage();
+			stage.start([{
+				type: 'sound',
+				tracks: ['one'],
+				loop: true
+			}])
+			stage.update(0);
+			stage.update(1);
+			
+			assertEqual(stopped, ['one']);
 		});
 		
 		function constant(value) {

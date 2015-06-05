@@ -40,32 +40,48 @@ var ambience = function(outside) {
 				tracks = shuffleArray(tracks);
 			}
 			
-			var trackElapsed = 0;
-			var trackDuration = function() { return 0; };
-			var trackIndex = -1;
+			var updateLatest = startTrack(0);
+			updateLatest.index = 0;
 			
-			var update = function(increase) {
-				trackElapsed += increase;
-				if ( trackElapsed >= trackDuration() - overlap ) {
-					if ( (trackIndex + 1) in tracks ) {
-						trackIndex += 1;
-						trackDuration = outside.start.track(tracks[trackIndex]).duration;
-						trackElapsed = 0;
-					}
-					else if ( loop ) {
-						trackIndex = -1;
-						if ( shuffle ) {
-							tracks = shuffleArray(tracks);
-						}
-						update(increase);
-					}
-				}
-			};
-			
-		    return {
-				update: update,
+			return {
+				update: function(increase) {
+				    updateLatest(increase);
+				},
 				stop: nothing
 			};
+			
+			function startTrack(index) {
+				var elapsed = 0;
+				var handle = outside.start.track(tracks[index]);
+				var updateNext = null;
+				
+				return function update(increase) {
+					elapsed += increase;
+					if ( updateNext ) {
+						updateNext(increase);
+					}
+					
+					if ( elapsed >= handle.duration() - overlap && !updateNext ) {
+						if ( (index + 1) in tracks ) {
+							updateNext = startTrack(index + 1);
+							updateNext.index = index + 1;
+						}
+						else if ( loop ) {
+							if ( shuffle ) {
+								tracks = shuffleArray(tracks);
+							}
+							updateNext = startTrack(0);
+						}
+					}
+					
+					if ( elapsed === handle.duration() ) {
+						handle.stop();
+						if ( updateNext ) {
+							updateLatest = updateNext;
+						}
+					}
+				};
+			}
 		}
 		
 		function update(increase) {
