@@ -457,6 +457,38 @@ suite('ambience', function() {
 			assertEqual(stopped, ['one']);
 		});
 		
+		test('overlapping track starts tracking time immediately', function() {
+			var stage = defaultStage();
+			stage.start([{
+				type: 'sound',
+				tracks: ['one', 'two', 'three'],
+				loop: false,
+				overlap: 0.2
+			}]);
+			stage.update(0);
+			stage.update(0.8); // Track two should start here, as the secondary track.
+			stage.update(0.2); // Track two should now be the primary track, with 0.2 elapsed.
+			stage.update(0.6); // Track three should start here.
+			
+			assertEqual(started, ['one', 'two', 'three']);
+		});
+		
+		test('overlapping track starts tracking time immediately, accounting for offset', function() {
+			var stage = defaultStage();
+			stage.start([{
+				type: 'sound',
+				tracks: ['one', 'two', 'three'],
+				loop: false,
+				overlap: 0.2
+			}]);
+			stage.update(0);
+			stage.update(0.8); // Track two should start here, as the secondary track.
+			stage.update(0.3); // Track two should now be the primary track, with 0.3 elapsed.
+			stage.update(0.5); // Track three should start here.
+			
+			assertEqual(started, ['one', 'two', 'three']);
+		});
+		
 		test('single track, no loop, shuffle', function() {
 			var stage = defaultStage();
 			stage.start([{

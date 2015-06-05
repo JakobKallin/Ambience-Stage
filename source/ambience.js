@@ -50,8 +50,8 @@ var ambience = function(outside) {
 				stop: nothing
 			};
 			
-			function startTrack(index) {
-				var elapsed = 0;
+			function startTrack(index, elapsed) {
+				elapsed = elapsed || 0;
 				var handle = outside.start.track(tracks[index]);
 				var updateNext = null;
 				
@@ -60,7 +60,7 @@ var ambience = function(outside) {
 					
 					if ( elapsed >= handle.duration() - overlap && !updateNext ) {
 						if ( (index + 1) in tracks ) {
-							updateNext = startTrack(index + 1);
+							updateNext = startTrack(index + 1, handle.duration() - overlap);
 							updateNext.index = index + 1;
 						}
 						else if ( loop ) {
