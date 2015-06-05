@@ -57,9 +57,6 @@ var ambience = function(outside) {
 				
 				return function update(increase) {
 					elapsed += increase;
-					if ( updateNext ) {
-						updateNext(increase);
-					}
 					
 					if ( elapsed >= handle.duration() - overlap && !updateNext ) {
 						if ( (index + 1) in tracks ) {
