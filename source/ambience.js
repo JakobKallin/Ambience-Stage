@@ -74,7 +74,7 @@ var ambience = function(outside) {
 						}
 					}
 					
-					if ( elapsed === handle.duration() ) {
+					if ( elapsed >= handle.duration() ) {
 						handle.stop();
 						if ( updateNext ) {
 							updateLatest = updateNext;

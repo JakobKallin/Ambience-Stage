@@ -444,6 +444,19 @@ suite('ambience', function() {
 			assertEqual(started, ['one', 'one']);
 		});
 		
+		test('track stops even when ticked higher than duration', function() {
+			var stage = defaultStage();
+			stage.start([{
+				type: 'sound',
+				tracks: ['one'],
+				loop: false
+			}]);
+			stage.update(0);
+			stage.update(1.1);
+			
+			assertEqual(stopped, ['one']);
+		});
+		
 		test('single track, no loop, shuffle', function() {
 			var stage = defaultStage();
 			stage.start([{
