@@ -4,6 +4,7 @@ var ambience = function(outside) {
 	function start(items, fade) {
 		fade = fade || 0;
 		
+		var stopScene = 'scene' in outside.start ? outside.start.scene(updateScene) : nothing;
 		var handles = items.map(startItem);
 		
 		function startItem(item) {
@@ -49,17 +50,18 @@ var ambience = function(outside) {
 				stop: nothing
 			};
 			
-			function startTrack(index, elapsed) {
-				elapsed = elapsed || 0;
-				var handle = outside.start.track(tracks[index]);
+			function startTrack(index) {
+				var startTime = outside.time();
+				var handle = outside.start.track(tracks[index], updateScene);
 				var updateNext = null;
 				
-				return function update(increase) {
-					elapsed += increase;
+				return function update() {
+					var currentTime = outside.time();
+					var elapsed = currentTime - startTime;
 					
 					if ( elapsed >= handle.duration() - overlap && !updateNext ) {
 						if ( (index + 1) in tracks ) {
-							updateNext = startTrack(index + 1, handle.duration() - overlap);
+							updateNext = startTrack(index + 1);
 						}
 						else if ( loop ) {
 							if ( shuffle ) {
@@ -79,17 +81,18 @@ var ambience = function(outside) {
 			}
 		}
 		
-		function update(increase) {
-			updateFade(increase);
+		function updateScene() {
+			updateFade();
 			handles.forEach(function(handle) {
-			    handle.update(increase);
+			    handle.update();
 			});
 		};
 		
-		var fadeElapsed = 0;
-		function updateFade(increase) {
-			fadeElapsed += increase;
-			var ratio = fadeRatio(fadeElapsed, fade);
+		var sceneStartTime = outside.time();
+		function updateFade() {
+			var currentTime = outside.time();
+			var elapsed = currentTime - sceneStartTime;
+			var ratio = fadeRatio(elapsed, fade);
 			if ( typeof ratio !== 'number' || isNaN(ratio) ) {
 				throw new Error('Fade ratio was incorrectly computed as NaN.');
 			}
@@ -100,17 +103,15 @@ var ambience = function(outside) {
 		};
 		
 		function stop() {
+			stopScene();
 		    handles.forEach(function(handle) {
 		        handle.stop();
 		    });
 		}
 		
-		return {
-			start: function(items, fade) {
-			    stop();
-				return start(items, fade);
-			},
-			update: update
+		return function(items, fade) {
+		    stop();
+			return start(items, fade);
 		};
 	}
 	
@@ -127,7 +128,5 @@ var ambience = function(outside) {
 	
 	function nothing() {}
 	
-	return {
-		start: start
-	};
+	return start;
 };

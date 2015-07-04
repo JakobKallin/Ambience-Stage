@@ -25,33 +25,33 @@ suite('ambience', function() {
 	function nothing() {}
 	
 	function statefulStage(callbacks) {
-		var handle = ambience(callbacks);
+		var start = ambience(callbacks);
 		
-		return {
-			start: start,
-			stop: stop,
-			update: update
+		return function(items, fade) {
+			var nextStart = start(items, fade);
+			start = nextStart;
 		};
-		
-		function start(items, fade) {
-			handle = handle.start(items, fade);
-		}
-		
-		function stop(fade) {
-			start([], fade);
-		}
-		
-		function update(increase) {
-			handle.update(increase);
-		}
 	}
+	
+	var time;
+	var updateLatest;
+	var advance;
+	setup(function() {
+		time = 0;
+		updateLatest = nothing;
+		advance = function(amount) {
+			time += amount;
+			updateLatest();
+		}
+	});
 	
 	suite('scene', function() {
 		var started;
 		var stopped;
 		var fadeIn;
 		var fadeOut;
-		var stage;
+		var start;
+		var stop;
 		
 		setup(function() {
 			started = [];
@@ -59,178 +59,219 @@ suite('ambience', function() {
 			fadeIn = [];
 			fadeOut = [];
 			
+			var latestSceneIndex = -1;
 			var callbacks = {
 				start: {
-					image: function(image) {
-						started.push(image.url);
+					scene: function(update) {
+					    updateLatest = update;
+						var sceneIndex = latestSceneIndex + 1;
+						started.push(sceneIndex);
+						latestSceneIndex = sceneIndex;
 						return function stop() {
-							stopped.push(image.url);
+							stopped.push(sceneIndex);
 						};
 					}
 				},
 				fade: {
 					in: collect(fadeIn),
 					out: collect(fadeOut)
+				},
+				time: function() {
+				    return time;
 				}
 			};
 			
-			stage = statefulStage(callbacks);
+			start = statefulStage(callbacks);
+			stop = function(fade) {
+			    start([], fade);
+			};
 		});
 		
 		test('start scene', function() {
-			stage.start([{ type: 'image', url: 'image' }]);
+			start([]);
 			
-			assertEqual(started, ['image']);
+			assertEqual(started, [0]);
 		});
 		
 		test('stop scene', function() {
-			stage.start([{ type: 'image', url: 'image' }]);
-			stage.stop();
+			start([]);
+			stop();
 			
-			// One indirectly from calling `start`, one directly from calling `stop`.
-			assertEqual(stopped, ['image']);
+			assertEqual(stopped, [0]);
 		});
 		
 		test('fade in, before', function() {
-			stage.start([], 1000);
+			start([], 1000);
 			
 			assertEqual(fadeIn, []);
 		});
 		
 		test('fade in, beginning', function() {
-			stage.start([], 1000);
-			stage.update(0);
+			start([], 1000);
+			advance(0);
 			
 			assertEqual(fadeIn, [0]);
 		});
 		
 		test('fade in, middle', function() {
-			stage.start([], 1000);
-			stage.update(500);
+			start([], 1000);
+			advance(500);
 			
 			assertEqual(fadeIn, [0.5]);
 		});
 		
 		test('fade in, end', function() {
-			stage.start([], 1000);
-			stage.update(1000);
+			start([], 1000);
+			advance(1000);
 			
 			assertEqual(fadeIn, [1]);
 		});
 		
 		test('fade in, after', function() {
-			stage.start([], 1000);
-			stage.update(1500);
+			start([], 1000);
+			advance(1500);
 			
 			assertEqual(fadeIn, [1]);
 		});
 		
 		test('fade out, before', function() {
-			stage.start([]);
-			stage.stop(1000);
+			start([]);
+			stop(1000);
 			
 			assertEqual(fadeOut, []);
 		});
 		
 		test('fade out, beginning', function() {
-			stage.start([]);
-			stage.stop(1000);
-			stage.update(0);
+			start([]);
+			stop(1000);
+			advance(0);
 			
 			assertEqual(fadeOut, [1]);
 		});
 		
 		test('fade out, middle', function() {
-			stage.start([]);
-			stage.stop(1000);
-			stage.update(500);
+			start([]);
+			stop(1000);
+			advance(500);
 			
 			assertEqual(fadeOut, [0.5]);
 		});
 		
 		test('fade out, end', function() {
-			stage.start([{ type: 'image', url: 'image' }]);
-			stage.stop(1000);
-			stage.update(1000);
+			start([]);
+			stop(1000);
+			advance(1000);
 			
 			assertEqual(fadeOut, [0]);
-			assertEqual(stopped, ['image']);
+			assertEqual(stopped, [0]);
 		});
 		
 		test('fade out, after', function() {
-			stage.start([{ type: 'image', url: 'image' }]);
-			stage.stop(1000);
-			stage.update(1500);
+			start([]);
+			stop(1000);
+			advance(1500);
 			
 			assertEqual(fadeOut, [0]);
-			assertEqual(stopped, ['image']);
+			assertEqual(stopped, [0]);
 		});
 		
 		test('fade in twice, middle', function() {
-			stage.start([{ type: 'image', url: 'image' }], 1000);
-			stage.update(1500);
-			stage.start([{ type: 'image', url: 'image' }], 1000);
-			stage.update(500);
+			start([], 1000);
+			advance(1500);
+			start([], 1000);
+			advance(500);
 			
 			assertEqual(fadeIn, [1, 0.5]);
 		});
 		
 		test('replace scene, without fading', function() {
-			stage.start([{ type: 'image', url: 'image/1' }]);
-			stage.start([{ type: 'image', url: 'image/2' }]);
+			start([]);
+			start([]);
 			
-			assertEqual(started, ['image/1', 'image/2'])
-			assertEqual(stopped, ['image/1']);
+			assertEqual(started, [0, 1])
+			assertEqual(stopped, [0]);
 		});
 		
 		test('replace scene, with fading, before', function() {
-			stage.start([{ type: 'image', url: 'image/1' }]);
-			stage.start([{ type: 'image', url: 'image/2' }], 1000);
+			start([]);
+			start([], 1000);
 			
 			assertEqual(fadeOut, []);
 			assertEqual(fadeIn, []);
 		});
 		
 		test('replace scene, with fading, beginning', function() {
-			stage.start([{ type: 'image', url: 'image/1' }]);
-			stage.start([{ type: 'image', url: 'image/2' }], 1000);
-			stage.update(0);
+			start([]);
+			start([], 1000);
+			advance(0);
 			
 			assertEqual(fadeOut, [1]);
 			assertEqual(fadeIn, [0]);
 		});
 		
 		test('replace scene, with fading, middle', function() {
-			stage.start([{ type: 'image', url: 'image/1' }]);
-			stage.start([{ type: 'image', url: 'image/2' }], 1000);
-			stage.update(500);
+			start([]);
+			start([], 1000);
+			advance(500);
 			
 			assertEqual(fadeOut, [0.5]);
 			assertEqual(fadeIn, [0.5]);
 		});
 		
 		test('replace scene, with fading, end', function() {
-			stage.start([{ type: 'image', url: 'image/1' }]);
-			stage.start([{ type: 'image', url: 'image/2' }], 1000);
-			stage.update(1000);
+			start([]);
+			start([], 1000);
+			advance(1000);
 			
 			assertEqual(fadeOut, [0]);
 			assertEqual(fadeIn, [1]);
-			assertEqual(stopped, ['image/1']);
+			assertEqual(stopped, [0]);
 		});
 		
 		test('replace scene, with fading, after', function() {
-			stage.start([{ type: 'image', url: 'image/1' }]);
-			stage.start([{ type: 'image', url: 'image/2' }], 1000);
-			stage.update(1500);
+			start([]);
+			start([], 1000);
+			advance(1500);
 			
 			assertEqual(fadeOut, [0]);
 			assertEqual(fadeIn, [1]);
-			assertEqual(stopped, ['image/1']);
+			assertEqual(stopped, [0]);
+		});
+	});
+	
+	suite('multiple media', function() {
+		var started;
+		var stopped;
+		var start;
+		var stop;
+		
+		setup(function() {
+			started = [];
+			stopped = [];
+			
+			var callbacks = {
+				start: {
+					image: function(image, update) {
+						updateLatest = update;
+						started.push(image.url);
+						return function stop() {
+							stopped.push(image.url);
+						};
+					}
+				},
+				time: function() {
+					return time;
+				}
+			};
+			
+			start = statefulStage(callbacks);
+			stop = function(fade) {
+			    return start([], fade);
+			}
 		});
 		
-		test('multiple media, start', function() {
-			stage.start([
+		test('start', function() {
+			start([
 				{ type: 'image', url: 'image/1' },
 				{ type: 'image', url: 'image/2' }
 			]);
@@ -238,12 +279,12 @@ suite('ambience', function() {
 			assertEqual(started, ['image/1', 'image/2']);
 		});
 		
-		test('multiple media, stop', function() {
-			stage.start([
+		test('stop', function() {
+			start([
 				{ type: 'image', url: 'image/1' },
 				{ type: 'image', url: 'image/2' }
 			]);
-			stage.stop();
+			stop();
 			
 			assertEqual(stopped, ['image/1', 'image/2']);
 		});
@@ -252,11 +293,6 @@ suite('ambience', function() {
 	suite('sound', function() {
 		var started;
 		var stopped;
-		// The `tick` below is updated whenever a new track starts and the tests
-		// below always use the latest one.
-		var tick;
-		var start;
-		var stop;
 		var defaultStage;
 		var defaultCallbacks;
 		
@@ -265,7 +301,8 @@ suite('ambience', function() {
 			stopped = [];
 			defaultCallbacks = {
 				start: {
-					track: function(url) {
+					track: function(url, update) {
+						updateLatest = update;
 						started.push(url);
 						return {
 							stop: function() {
@@ -280,6 +317,9 @@ suite('ambience', function() {
 				fade: {
 					in: nothing,
 					out: nothing
+				},
+				time: function() {
+					return time;
 				}
 			};
 			defaultStage = function() {
@@ -289,8 +329,8 @@ suite('ambience', function() {
 		
 		test('no tracks', function() {
 			assertError(function() {
-				var stage = defaultStage();
-				stage.start([{
+				var start = defaultStage();
+				start([{
 					type: 'sound',
 					tracks: []
 				}]);
@@ -298,68 +338,68 @@ suite('ambience', function() {
 		});
 		
 		test('single track', function() {
-			var stage = defaultStage();
-			stage.start([{
+			var start = defaultStage();
+			start([{
 				type: 'sound',
 				tracks: ['test']
 			}]);
-			stage.update(0);
+			advance(0);
 			
 			assertEqual(started, ['test']);
 		});
 		
 		test('single track, loop', function() {
-			var stage = defaultStage();
-			stage.start([{
+			var start = defaultStage();
+			start([{
 				type: 'sound',
 				tracks: ['test'],
 				loop: true
 			}]);
-			stage.update(0);
-			stage.update(1);
+			advance(0);
+			advance(1);
 			
 			assertEqual(started, ['test', 'test']);
 		});
 		
 		test('single track, no loop', function() {
-			var stage = defaultStage();
-			stage.start([{
+			var start = defaultStage();
+			start([{
 				type: 'sound',
 				tracks: ['test'],
 				loop: false
 			}]);
-			stage.update(0);
-			stage.update(1);
+			advance(0);
+			advance(1);
 			
 			assertEqual(started, ['test']);
 		});
 		
 		test('two tracks, loop', function() {
-			var stage = defaultStage();
-			stage.start([{
+			var start = defaultStage();
+			start([{
 				type: 'sound',
 				tracks: ['one', 'two'],
 				loop: true
 			}]);
-			stage.update(0);
-			stage.update(1);
-			stage.update(1);
-			stage.update(1);
+			advance(0);
+			advance(1);
+			advance(1);
+			advance(1);
 			
 			assertEqual(started, ['one', 'two', 'one', 'two']);
 		});
 		
 		test('two tracks, no loop', function() {
-			var stage = defaultStage();
-			stage.start([{
+			var start = defaultStage();
+			start([{
 				type: 'sound',
 				tracks: ['one', 'two'],
 				loop: false
 			}]);
-			stage.update(0);
-			stage.update(1);
-			stage.update(1);
-			stage.update(1);
+			advance(0);
+			advance(1);
+			advance(1);
+			advance(1);
 			
 			assertEqual(started, ['one', 'two']);
 		});
@@ -369,150 +409,150 @@ suite('ambience', function() {
 		// one is scheduled later and using a different method and thus fails",
 		// so we try with three tracks to be on the safe side.
 		test('three tracks, loop', function() {
-			var stage = defaultStage();
-			stage.start([{
+			var start = defaultStage();
+			start([{
 				type: 'sound',
 				tracks: ['one', 'two', 'three'],
 				loop: true
 			}]);
-			stage.update(0);
-			stage.update(1);
-			stage.update(1);
-			stage.update(1);
-			stage.update(1);
-			stage.update(1);
+			advance(0);
+			advance(1);
+			advance(1);
+			advance(1);
+			advance(1);
+			advance(1);
 			
 			assertEqual(started, ['one', 'two', 'three', 'one', 'two', 'three']);
 		});
 		
 		test('three tracks, no loop', function() {
-			var stage = defaultStage();
-			stage.start([{
+			var start = defaultStage();
+			start([{
 				type: 'sound',
 				tracks: ['one', 'two', 'three'],
 				loop: false
 			}]);
-			stage.update(0);
-			stage.update(1);
-			stage.update(1);
-			stage.update(1);
+			advance(0);
+			advance(1);
+			advance(1);
+			advance(1);
 			
 			assertEqual(started, ['one', 'two', 'three']);
 		});
 		
 		test('single track, loop, overlap', function() {
-			var stage = defaultStage();
-			stage.start([{
+			var start = defaultStage();
+			start([{
 				type: 'sound',
 				tracks: ['test'],
 				loop: true,
 				overlap: 0.2
 			}]);
-			stage.update(0);
-			stage.update(0.8);
+			advance(0);
+			advance(0.8);
 			
 			assertEqual(started, ['test', 'test']);
 		});
 		
 		test('single track, no loop, overlap', function() {
-			var stage = defaultStage();
-			stage.start([{
+			var start = defaultStage();
+			start([{
 				type: 'sound',
 				tracks: ['test'],
 				loop: false,
 				overlap: 0.2
 			}]);
-			stage.update(0);
-			stage.update(0.8);
+			advance(0);
+			advance(0.8);
 			
 			assertEqual(started, ['test']);
 		});
 		
 		test('single overlap regardless of number of ticks', function() {
-			var stage = defaultStage();
-			stage.start([{
+			var start = defaultStage();
+			start([{
 				type: 'sound',
 				tracks: ['one'],
 				loop: true,
 				overlap: 0.2
 			}]);
-			stage.update(0);
-			stage.update(0.81);
-			stage.update(0.01);
-			stage.update(0.01);
+			advance(0);
+			advance(0.81);
+			advance(0.01);
+			advance(0.01);
 			
 			assertEqual(started, ['one', 'one']);
 		});
 		
 		test('track stops even when ticked higher than duration', function() {
-			var stage = defaultStage();
-			stage.start([{
+			var start = defaultStage();
+			start([{
 				type: 'sound',
 				tracks: ['one'],
 				loop: false
 			}]);
-			stage.update(0);
-			stage.update(1.1);
+			advance(0);
+			advance(1.1);
 			
 			assertEqual(stopped, ['one']);
 		});
 		
 		test('overlapping track starts tracking time immediately', function() {
-			var stage = defaultStage();
-			stage.start([{
+			var start = defaultStage();
+			start([{
 				type: 'sound',
 				tracks: ['one', 'two', 'three'],
 				loop: false,
 				overlap: 0.2
 			}]);
-			stage.update(0);
-			stage.update(0.8); // Track two should start here, as the secondary track.
-			stage.update(0.2); // Track two should now be the primary track, with 0.2 elapsed.
-			stage.update(0.6); // Track three should start here.
+			advance(0);
+			advance(0.8); // Track two should start here, as the secondary track.
+			advance(0.2); // Track two should now be the primary track, with 0.2 elapsed.
+			advance(0.6); // Track three should start here.
 			
 			assertEqual(started, ['one', 'two', 'three']);
 		});
 		
 		test('overlapping track starts tracking time immediately, accounting for offset', function() {
-			var stage = defaultStage();
-			stage.start([{
+			var start = defaultStage();
+			start([{
 				type: 'sound',
 				tracks: ['one', 'two', 'three'],
 				loop: false,
 				overlap: 0.2
 			}]);
-			stage.update(0);
-			stage.update(0.8); // Track two should start here, as the secondary track.
-			stage.update(0.3); // Track two should now be the primary track, with 0.3 elapsed.
-			stage.update(0.5); // Track three should start here.
+			advance(0);
+			advance(0.8); // Track two should start here, as the secondary track.
+			advance(0.3); // Track two should now be the primary track, with 0.3 elapsed.
+			advance(0.5); // Track three should start here.
 			
 			assertEqual(started, ['one', 'two', 'three']);
 		});
 		
 		test('single track, no loop, shuffle', function() {
-			var stage = defaultStage();
-			stage.start([{
+			var start = defaultStage();
+			start([{
 				type: 'sound',
 				tracks: ['test'],
 				loop: false,
 				shuffle: true
 			}]);
-			stage.update(0);
-			stage.update(1);
+			advance(0);
+			advance(1);
 			
 			assertEqual(started, ['test']);
 		});
 		
 		test('single track, loop, shuffle', function() {
-			var stage = defaultStage();
-			stage.start([{
+			var start = defaultStage();
+			start([{
 				type: 'sound',
 				tracks: ['test'],
 				loop: true,
 				shuffle: true
 			}]);
-			stage.update(0);
-			stage.update(1);
+			advance(0);
+			advance(1);
 			
 			assertEqual(started, ['test', 'test']);
 		});
@@ -523,15 +563,15 @@ suite('ambience', function() {
 				'shuffle',
 				constant(['two', 'one'])
 			);
-			var stage = statefulStage(callbacks);
-			stage.start([{
+			var start = statefulStage(callbacks);
+			start([{
 				type: 'sound',
 				tracks: ['one', 'two'],
 				loop: false,
 				shuffle: true
 			}]);
-			stage.update(0);
-			stage.update(1);
+			advance(0);
+			advance(1);
 			
 			assertEqual(started, ['two', 'one']);
 		});
@@ -542,15 +582,15 @@ suite('ambience', function() {
 				'shuffle',
 				constant(['two', 'one'])
 			);
-			var stage = statefulStage(callbacks);
-			stage.start([{
+			var start = statefulStage(callbacks);
+			start([{
 				type: 'sound',
 				tracks: ['one', 'two'],
 				loop: true,
 				shuffle: true
 			}]);
-			stage.update(0);
-			stage.update(1);
+			advance(0);
+			advance(1);
 			
 			assertEqual(started, ['two', 'one']);
 		});
@@ -570,25 +610,25 @@ suite('ambience', function() {
 				}
 			};
 			var callbacks = extend(defaultCallbacks, 'shuffle', shuffle);
-			var stage = statefulStage(callbacks);
+			var start = statefulStage(callbacks);
 			
-			stage.start([{
+			start([{
 				type: 'sound',
 				tracks: ['one', 'two'],
 				loop: true,
 				shuffle: true
 			}]);
-			stage.update(0);
-			stage.update(1);
-			stage.update(1);
-			stage.update(1);
+			advance(0);
+			advance(1);
+			advance(1);
+			advance(1);
 			
 			assertEqual(started, ['two', 'one', 'one', 'two']);
 		});
 		
 		test('multiple tracklists, different overlap', function() {
-			var stage = defaultStage();
-			stage.start([
+			var start = defaultStage();
+			start([
 				{
 					type: 'sound',
 					tracks: ['one'],
@@ -602,64 +642,64 @@ suite('ambience', function() {
 					loop: true
 				}
 			]);
-			stage.update(0);
-			stage.update(0.5);
-			stage.update(0.3);
+			advance(0);
+			advance(0.5);
+			advance(0.3);
 			
 			assertEqual(started, ['one', 'two', 'two', 'one']);
 		});
 		
 		test('track plays during overlap', function() {
-			var stage = defaultStage();
-			stage.start([{
+			var start = defaultStage();
+			start([{
 				type: 'sound',
 				tracks: ['one', 'two'],
 				overlap: 0.2
 			}])
-			stage.update(0);
-			stage.update(0.8);
-			stage.update(0.1);
+			advance(0);
+			advance(0.8);
+			advance(0.1);
 			
 			assertEqual(started, ['one', 'two']);
 			assertEqual(stopped, []);
 		});
 		
 		test('track stops after overlap', function() {
-			var stage = defaultStage();
-			stage.start([{
+			var start = defaultStage();
+			start([{
 				type: 'sound',
 				tracks: ['one', 'two'],
 				overlap: 0.2
 			}])
-			stage.update(0);
-			stage.update(0.8);
-			stage.update(0.2);
+			advance(0);
+			advance(0.8);
+			advance(0.2);
 			
 			assertEqual(started, ['one', 'two']);
 			assertEqual(stopped, ['one']);
 		});
 		
 		test('last track stops', function() {
-			var stage = defaultStage();
-			stage.start([{
+			var start = defaultStage();
+			start([{
 				type: 'sound',
 				tracks: ['one']
 			}])
-			stage.update(0);
-			stage.update(1);
+			advance(0);
+			advance(1);
 			
 			assertEqual(stopped, ['one']);
 		});
 		
 		test('last track stops, loop', function() {
-			var stage = defaultStage();
-			stage.start([{
+			var start = defaultStage();
+			start([{
 				type: 'sound',
 				tracks: ['one'],
 				loop: true
 			}])
-			stage.update(0);
-			stage.update(1);
+			advance(0);
+			advance(1);
 			
 			assertEqual(stopped, ['one']);
 		});
