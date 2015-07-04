@@ -41,7 +41,6 @@ var ambience = function(outside) {
 			}
 			
 			var updateLatest = startTrack(0);
-			updateLatest.index = 0;
 			
 			return {
 				update: function(increase) {
@@ -61,7 +60,6 @@ var ambience = function(outside) {
 					if ( elapsed >= handle.duration() - overlap && !updateNext ) {
 						if ( (index + 1) in tracks ) {
 							updateNext = startTrack(index + 1, handle.duration() - overlap);
-							updateNext.index = index + 1;
 						}
 						else if ( loop ) {
 							if ( shuffle ) {
@@ -122,7 +120,7 @@ var ambience = function(outside) {
 		}
 		else {
 			var ratio = progress / ceiling;
-			var boundedRatio = Math.min(Math.max(ratio, 0), 1)
+			var boundedRatio = Math.min(Math.max(ratio, 0), 1);
 			return boundedRatio;
 		}
 	}
