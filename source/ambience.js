@@ -13,6 +13,9 @@ ambience.start.scene = function(items, fadeInDuration, outside) {
     var updateFade = function updateFadeIn() {
         var ratio = fadeRatio(startTime, outside.time(), fadeInDuration);
         outside.fade.scene.in(ratio);
+        handles.forEach(function(handle) {
+            handle.fade(ratio);
+        });
         
         if ( ratio === 1 ) {
             updateFade = nothing;
@@ -22,9 +25,9 @@ ambience.start.scene = function(items, fadeInDuration, outside) {
     return start(items, fadeInDuration, outside);
     
     function start(items, fadeInDuration, outside) {
-        outsideEndScene = outside.start.scene(update);
+        outsideEndScene = outside.start.scene ? outside.start.scene(update) : nothing;
         handles = items.map(function(item) {
-            return outside.start[item.type](item);
+            return outside.start[item.type](item, update);
         });
         return stop;
     }
@@ -42,6 +45,9 @@ ambience.start.scene = function(items, fadeInDuration, outside) {
         updateFade = function updateFadeOut() {
             var ratio = fadeRatio(stopTime, outside.time(), fadeOutDuration);
             outside.fade.scene.out(ratio);
+            handles.forEach(function(handle) {
+                handle.fade(ratio);
+            });
             
             if ( ratio === 1 ) {
                 end();
@@ -60,7 +66,7 @@ ambience.start.scene = function(items, fadeInDuration, outside) {
             hasEnded = true;
             updateFade = nothing;
             handles.forEach(function(handle) {
-                handle();
+                handle.stop();
             });
             outsideEndScene();
         }

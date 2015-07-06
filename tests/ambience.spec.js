@@ -39,13 +39,6 @@ suite('ambience', function() {
 						return function stop() {
 							events.push('stop');
 						};
-					},
-					image: function(image, update) {
-						updates.push(update);
-						events.push('start ' + image.url);
-						return function stop() {
-							events.push('stop ' + image.url);
-						};
 					}
 				},
 				fade: {
@@ -251,35 +244,73 @@ suite('ambience', function() {
 			
 			assertEqual(events, ['start', 'fade out 50%', 'stop']);
 		});
-	
-		test('start', function() {
-			start([
-				{ type: 'image', url: 'image/1' },
-				{ type: 'image', url: 'image/2' }
-			]);
+	});
+		
+	suite('media', function() {
+		var events;
+		var start;
+		
+		setup(function() {
+			events = [];
 			
-			assertEqual(events, [
-				'start',
-				'start image/1',
-				'start image/2'
-			]);
+			var callbacks = {
+				start: {
+					image: function(image, update) {
+						updates.push(update);
+						events.push('start ' + image.url);
+						return {
+							stop: function() {
+								events.push('stop ' + image.url);
+							},
+							fade: function(ratio) {
+							    events.push('fade ' + (ratio * 100) + '% ' + image.url);
+							}
+						};
+					}
+				},
+				fade: {
+					scene: {
+						in: nothing,
+						out: nothing
+					}
+				},
+				time: function() {
+					return time;
+				}
+			};
+			
+			start = function(items, fade) {
+				fade = fade || 0;
+		    	return ambience.start.scene(items, fade, callbacks);
+			};
+		});
+		
+		test('start', function() {
+			start([{ type: 'image', url: 'image' }]);
+			
+			assertEqual(events, ['start image']);
 		});
 		
 		test('stop', function() {
-			var stop = start([
-				{ type: 'image', url: 'image/1' },
-				{ type: 'image', url: 'image/2' }
-			]);
+			var stop = start([{ type: 'image', url: 'image' }]);
 			stop(0);
 			
-			assertEqual(events, [
-				'start',
-				'start image/1',
-				'start image/2',
-				'stop image/1',
-				'stop image/2',
-				'stop'
-			]);
+			assertEqual(events, ['start image', 'stop image']);
+		});
+		
+		test('fade in', function() {
+			var stop = start([{ type: 'image', url: 'image' }], 1000);
+			advance(500);
+			
+			assertEqual(events, ['start image', 'fade 50% image']);
+		});
+		
+		test('fade out', function() {
+			var stop = start([{ type: 'image', url: 'image' }]);
+			stop(1000);
+			advance(500);
+			
+			assertEqual(events, ['start image', 'fade 50% image']);
 		});
 	});
 	
