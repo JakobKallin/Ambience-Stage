@@ -7,6 +7,7 @@ var ambience = {
 ambience.start.scene = function(items, fadeInDuration, outside) {
     var startTime = outside.time();
     var hasEnded = false;
+    var handles = [];
     var outsideEndScene;
     
     var updateFade = function updateFadeIn() {
@@ -22,6 +23,9 @@ ambience.start.scene = function(items, fadeInDuration, outside) {
     
     function start(items, fadeInDuration, outside) {
         outsideEndScene = outside.start.scene(update);
+        handles = items.map(function(item) {
+            return outside.start[item.type](item);
+        });
         return stop;
     }
     
@@ -55,6 +59,9 @@ ambience.start.scene = function(items, fadeInDuration, outside) {
         if ( !hasEnded ) {
             hasEnded = true;
             updateFade = nothing;
+            handles.forEach(function(handle) {
+                handle();
+            });
             outsideEndScene();
         }
     }

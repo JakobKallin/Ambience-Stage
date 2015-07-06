@@ -27,7 +27,6 @@ suite('ambience', function() {
 	suite('scene', function() {
 		var events;
 		var start;
-		var stop;
 		
 		setup(function() {
 			events = [];
@@ -39,6 +38,13 @@ suite('ambience', function() {
 						events.push('start');
 						return function stop() {
 							events.push('stop');
+						};
+					},
+					image: function(image, update) {
+						updates.push(update);
+						events.push('start ' + image.url);
+						return function stop() {
+							events.push('stop ' + image.url);
 						};
 					}
 				},
@@ -245,56 +251,35 @@ suite('ambience', function() {
 			
 			assertEqual(events, ['start', 'fade out 50%', 'stop']);
 		});
-	});
 	
-	suite('multiple media', function() {
-		var started;
-		var stopped;
-		var start;
-		var stop;
-		
-		setup(function() {
-			started = [];
-			stopped = [];
-			
-			var callbacks = {
-				start: {
-					image: function(image, update) {
-						updateLatest = update;
-						started.push(image.url);
-						return function stop() {
-							stopped.push(image.url);
-						};
-					}
-				},
-				time: function() {
-					return time;
-				}
-			};
-			
-			start = statefulStage(callbacks);
-			stop = function(fade) {
-			    return start([], fade);
-			}
-		});
-		
 		test('start', function() {
 			start([
 				{ type: 'image', url: 'image/1' },
 				{ type: 'image', url: 'image/2' }
 			]);
 			
-			assertEqual(started, ['image/1', 'image/2']);
+			assertEqual(events, [
+				'start',
+				'start image/1',
+				'start image/2'
+			]);
 		});
 		
 		test('stop', function() {
-			start([
+			var stop = start([
 				{ type: 'image', url: 'image/1' },
 				{ type: 'image', url: 'image/2' }
 			]);
-			stop();
+			stop(0);
 			
-			assertEqual(stopped, ['image/1', 'image/2']);
+			assertEqual(events, [
+				'start',
+				'start image/1',
+				'start image/2',
+				'stop image/1',
+				'stop image/2',
+				'stop'
+			]);
 		});
 	});
 	
