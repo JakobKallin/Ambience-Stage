@@ -4,238 +4,246 @@ suite('ambience', function() {
 	var assert = chai.assert;
 	var assertEqual = chai.assert.deepEqual;
 	var assertError = chai.assert.throws;
+	chai.config.truncateThreshold = 0;
 	
 	var ambience = window.ambience;
 	
-	function collect(target) {
-		return function(value) {
-			target.push(value);
-		};
-	}
-	
-	function extend(object, newProperty, value) {
-		var newObject = {};
-		for ( var property in object ) {
-			newObject[property] = object[property];
-		}
-		newObject[newProperty] = value;
-		return newObject;
-	}
-	
 	function nothing() {}
 	
-	function statefulStage(callbacks) {
-		var start = ambience(callbacks);
-		
-		return function(items, fade) {
-			var nextStart = start(items, fade);
-			start = nextStart;
-		};
-	}
-	
 	var time;
-	var updateLatest;
+	var updates;
 	var advance;
 	setup(function() {
 		time = 0;
-		updateLatest = nothing;
+		updates = [];
 		advance = function(amount) {
 			time += amount;
-			updateLatest();
+			updates.forEach(function(update) {
+			    update();
+			});
 		}
 	});
 	
 	suite('scene', function() {
-		var started;
-		var stopped;
-		var fadeIn;
-		var fadeOut;
+		var events;
 		var start;
 		var stop;
 		
 		setup(function() {
-			started = [];
-			stopped = [];
-			fadeIn = [];
-			fadeOut = [];
+			events = [];
 			
-			var latestSceneIndex = -1;
 			var callbacks = {
 				start: {
 					scene: function(update) {
-					    updateLatest = update;
-						var sceneIndex = latestSceneIndex + 1;
-						started.push(sceneIndex);
-						latestSceneIndex = sceneIndex;
+						updates.push(update);
+						events.push('start');
 						return function stop() {
-							stopped.push(sceneIndex);
+							events.push('stop');
 						};
 					}
 				},
 				fade: {
-					in: collect(fadeIn),
-					out: collect(fadeOut)
+					scene: {
+						in: function(progress) {
+							events.push('fade in ' + (progress * 100) + '%');
+						},
+						out: function(progress) {
+							events.push('fade out ' + (progress * 100) + '%');
+						}
+					}
 				},
 				time: function() {
-				    return time;
+					return time;
 				}
 			};
 			
-			start = statefulStage(callbacks);
-			stop = function(fade) {
-			    start([], fade);
+			start = function(items, fade) {
+				fade = fade || 0;
+		    	return ambience.start.scene(items, fade, callbacks);
 			};
 		});
 		
 		test('start scene', function() {
 			start([]);
 			
-			assertEqual(started, [0]);
+			assertEqual(events, ['start']);
 		});
 		
 		test('stop scene', function() {
-			start([]);
-			stop();
+			var stop = start([]);
+			stop(0);
 			
-			assertEqual(stopped, [0]);
+			assertEqual(events, ['start', 'stop']);
+		});
+		
+		test('stop scene twice', function() {
+			var stop = start([]);
+			stop(0);
+			stop(0);
+			
+			assertEqual(events, ['start', 'stop']);
+		});
+		
+		test('abort scene without fading', function() {
+		    var stop = start([]);
+			var abort = stop(0);
+			abort();
+			
+			assertEqual(events, ['start', 'stop']);
+		});
+		
+		test('abort scene without fading twice', function() {
+		    var stop = start([]);
+			var abort = stop(0);
+			abort();
+			abort();
+			
+			assertEqual(events, ['start', 'stop']);
+		});
+		
+		test('abort scene with fading, before', function() {
+		    var stop = start([]);
+			var abort = stop(1000);
+			abort();
+			
+			assertEqual(events, ['start', 'stop']);
+		});
+		
+		test('abort scene with fading, beginning', function() {
+		    var stop = start([]);
+			var abort = stop(1000);
+			advance(0);
+			abort();
+			
+			assertEqual(events, ['start', 'fade out 0%', 'stop']);
+		});
+		
+		test('abort scene with fading, middle', function() {
+		    var stop = start([]);
+			var abort = stop(1000);
+			advance(500);
+			abort();
+			
+			assertEqual(events, ['start', 'fade out 50%', 'stop']);
+		});
+		
+		test('abort scene with fading, end', function() {
+		    var stop = start([]);
+			var abort = stop(1000);
+			advance(1000);
+			abort();
+			
+			assertEqual(events, ['start', 'fade out 100%', 'stop']);
+		});
+		
+		test('abort scene with fading, after', function() {
+		    var stop = start([]);
+			var abort = stop(1000);
+			advance(1500);
+			abort();
+			
+			assertEqual(events, ['start', 'fade out 100%', 'stop']);
 		});
 		
 		test('fade in, before', function() {
 			start([], 1000);
 			
-			assertEqual(fadeIn, []);
+			assertEqual(events, ['start']);
 		});
 		
 		test('fade in, beginning', function() {
 			start([], 1000);
 			advance(0);
 			
-			assertEqual(fadeIn, [0]);
+			assertEqual(events, ['start', 'fade in 0%']);
 		});
 		
 		test('fade in, middle', function() {
 			start([], 1000);
 			advance(500);
 			
-			assertEqual(fadeIn, [0.5]);
+			assertEqual(events, ['start', 'fade in 50%']);
 		});
 		
 		test('fade in, end', function() {
 			start([], 1000);
 			advance(1000);
 			
-			assertEqual(fadeIn, [1]);
+			assertEqual(events, ['start', 'fade in 100%']);
 		});
 		
 		test('fade in, after', function() {
 			start([], 1000);
 			advance(1500);
 			
-			assertEqual(fadeIn, [1]);
+			assertEqual(events, ['start', 'fade in 100%']);
 		});
 		
 		test('fade out, before', function() {
-			start([]);
+			var stop = start([]);
 			stop(1000);
 			
-			assertEqual(fadeOut, []);
+			assertEqual(events, ['start']);
 		});
 		
 		test('fade out, beginning', function() {
-			start([]);
+			var stop = start([]);
 			stop(1000);
 			advance(0);
 			
-			assertEqual(fadeOut, [1]);
+			assertEqual(events, ['start', 'fade out 0%']);
 		});
 		
 		test('fade out, middle', function() {
-			start([]);
+			var stop = start([]);
 			stop(1000);
 			advance(500);
 			
-			assertEqual(fadeOut, [0.5]);
+			assertEqual(events, ['start', 'fade out 50%']);
 		});
 		
 		test('fade out, end', function() {
-			start([]);
+			var stop = start([]);
 			stop(1000);
 			advance(1000);
 			
-			assertEqual(fadeOut, [0]);
-			assertEqual(stopped, [0]);
+			assertEqual(events, ['start', 'fade out 100%', 'stop']);
 		});
 		
 		test('fade out, after', function() {
-			start([]);
+			var stop = start([]);
 			stop(1000);
 			advance(1500);
 			
-			assertEqual(fadeOut, [0]);
-			assertEqual(stopped, [0]);
+			assertEqual(events, ['start', 'fade out 100%', 'stop']);
 		});
 		
-		test('fade in twice, middle', function() {
-			start([], 1000);
-			advance(1500);
-			start([], 1000);
+		test('stop scene during fade-in', function() {
+		    var stop = start([], 1000);
+			advance(500);
+			stop(0);
+			advance(100);
+			
+			assertEqual(events, ['start', 'fade in 50%', 'stop']);
+		});
+		
+		test('fade out scene during fade-in', function() {
+		    var stop = start([], 1000);
+			advance(500);
+			stop(1000);
 			advance(500);
 			
-			assertEqual(fadeIn, [1, 0.5]);
+			assertEqual(events, ['start', 'fade in 50%', 'fade out 50%']);
 		});
 		
-		test('replace scene, without fading', function() {
-			start([]);
-			start([]);
-			
-			assertEqual(started, [0, 1])
-			assertEqual(stopped, [0]);
-		});
-		
-		test('replace scene, with fading, before', function() {
-			start([]);
-			start([], 1000);
-			
-			assertEqual(fadeOut, []);
-			assertEqual(fadeIn, []);
-		});
-		
-		test('replace scene, with fading, beginning', function() {
-			start([]);
-			start([], 1000);
-			advance(0);
-			
-			assertEqual(fadeOut, [1]);
-			assertEqual(fadeIn, [0]);
-		});
-		
-		test('replace scene, with fading, middle', function() {
-			start([]);
-			start([], 1000);
+		test('abort scene during fade-out', function() {
+		    var stop = start([]);
+			var abort = stop(1000);
 			advance(500);
+			abort(0);
+			advance(100);
 			
-			assertEqual(fadeOut, [0.5]);
-			assertEqual(fadeIn, [0.5]);
-		});
-		
-		test('replace scene, with fading, end', function() {
-			start([]);
-			start([], 1000);
-			advance(1000);
-			
-			assertEqual(fadeOut, [0]);
-			assertEqual(fadeIn, [1]);
-			assertEqual(stopped, [0]);
-		});
-		
-		test('replace scene, with fading, after', function() {
-			start([]);
-			start([], 1000);
-			advance(1500);
-			
-			assertEqual(fadeOut, [0]);
-			assertEqual(fadeIn, [1]);
-			assertEqual(stopped, [0]);
+			assertEqual(events, ['start', 'fade out 50%', 'stop']);
 		});
 	});
 	
@@ -295,6 +303,15 @@ suite('ambience', function() {
 		var stopped;
 		var defaultStage;
 		var defaultCallbacks;
+		
+		function extend(object, newProperty, value) {
+			var newObject = {};
+			for ( var property in object ) {
+				newObject[property] = object[property];
+			}
+			newObject[newProperty] = value;
+			return newObject;
+		}
 		
 		setup(function() {
 			started = [];
