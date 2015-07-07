@@ -53,47 +53,47 @@ suite('Ambience DOM', function() {
 		
 		// Use absolute URLs because browsers seem to treat relative URLs in 
 		// different ways, sometimes converting to absolute and sometimes not.
-		function absolute(url) {
-			return location.href + url;
+		function url(path) {
+			return location.href + path;
 		}
 		
 		test('start', function() {
-	    	start.image({ url: 'transparent-10.png' });
+	    	start.image({ url: url('transparent-10.png') });
 			
 			assertEqual(container.children.length, 1);
 			assertEqual(
 				withoutUrl(container.children[0].style.backgroundImage),
-				absolute('transparent-10.png')
+				url('transparent-10.png')
 			);
 		});
 		
 		test('stop', function() {
-	    	var handle = start.image({ url: 'transparent-10.png' });
+	    	var handle = start.image({ url: url('transparent-10.png') });
 			handle.stop();
 			
 			assertEqual(container.children.length, 0);
 		});
 		
 		test('stop one of many', function() {
-	    	var first = start.image({ url: 'transparent-10.png#1' });
-	    	var second = start.image({ url: 'transparent-10.png#2' });
-	    	var third = start.image({ url: 'transparent-10.png#3' });
+	    	var first = start.image({ url: url('transparent-10.png#1') });
+	    	var second = start.image({ url: url('transparent-10.png#2') });
+	    	var third = start.image({ url: url('transparent-10.png#3') });
 			second.stop();
 			
 			assertEqual(container.children.length, 2);
 			assertEqual(
 				withoutUrl(container.children[0].style.backgroundImage),
-				absolute('transparent-10.png#1')
+				url('transparent-10.png#1')
 			);
 			assertEqual(
 				withoutUrl(container.children[1].style.backgroundImage),
-				absolute('transparent-10.png#3')
+				url('transparent-10.png#3')
 			);
 		});
 		
 		test('style', function() {
 		    start.image({
-				url: 'transparent-10.png',
+				url: url('transparent-10.png'),
 				style: {
 					backgroundSize: 'cover'
 				}
