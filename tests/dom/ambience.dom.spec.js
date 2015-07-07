@@ -45,10 +45,14 @@ suite('Ambience DOM', function() {
 	});
 	
 	suite('image', function() {
+		// Remove the "url('...')" part from CSS values because we cannot 
+		// predict whether they will have quotes or not, and of what kind.
 		function withoutUrl(value) {
 			return value.replace(/^url\(('|")?/g, '').replace(/('|")?\)$/g, '');
 		}
 		
+		// Use absolute URLs because browsers seem to treat relative URLs in 
+		// different ways, sometimes converting to absolute and sometimes not.
 		function absolute(url) {
 			return location.href + url;
 		}
@@ -171,6 +175,22 @@ suite('Ambience DOM', function() {
 					// decent confidence in our result.
 					assertAbove(updates, 2);
 					assertBelow(updates, 10);
+					resolve();
+			    }, 1500);
+			});
+		});
+		
+		test('update on end', function() {
+			var latestUpdate;
+			var handle = start.track('silence-1.ogg', function() {
+				console.log(element.currentTime);
+				latestUpdate = element.currentTime;
+			});
+			var element = container.children[0];
+			
+			return new Promise(function(resolve, reject) {
+			    setTimeout(function() {
+					assertEqual(latestUpdate, element.duration);
 					resolve();
 			    }, 1500);
 			});
