@@ -1,6 +1,6 @@
 'use strict';
 
-suite('ambience', function() {
+suite('Ambience', function() {
 	var assert = chai.assert;
 	var assertEqual = chai.assert.deepEqual;
 	var assertError = chai.assert.throws;
