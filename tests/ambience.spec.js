@@ -53,7 +53,7 @@ suite('ambience', function() {
 			
 			start = function(items, fade) {
 				fade = fade || 0;
-		    	return ambience.start.scene(items, fade, callbacks);
+		    	return ambience(items, fade, callbacks);
 			};
 		});
 		
@@ -270,7 +270,7 @@ suite('ambience', function() {
 			
 			start = function(items, fade) {
 				fade = fade || 0;
-		    	return ambience.start.scene(items, fade, callbacks);
+		    	return ambience(items, fade, callbacks);
 			};
 		});
 		
@@ -340,7 +340,7 @@ suite('ambience', function() {
 			};
 			start = function(items, callbacks) {
 				callbacks = callbacks || defaultCallbacks;
-				return ambience.start.scene(items, 0, callbacks);
+				return ambience(items, 0, callbacks);
 			};
 		});
 		
@@ -735,5 +735,60 @@ suite('ambience', function() {
 				return value;
 			};
 		}
+	});
+	
+	suite('stage', function() {
+	    var events;
+		var stage;
+		
+		setup(function() {
+			events = [];
+			var latestScene = -1;
+		    stage = ambience.stage({
+				start: {
+					scene: function(update) {
+						var scene = latestScene + 1;
+						latestScene = scene;
+						updates.push(update);
+						events.push('start ' + scene);
+						return {
+							stop: function() {
+								events.push('stop ' + scene);
+							},
+							fade: function(ratio) {
+								events.push('fade ' + scene + ' ' + (ratio * 100) + '%');
+							}
+						};
+					}
+				},
+				time: function() {
+				    return time;
+				}
+			});
+		});
+		
+		test('crossfade', function() {
+		    stage([]);
+			stage([], 1000);
+			advance(250);
+			
+			assertEqual(events, ['start 0', 'start 1', 'fade 0 75%', 'fade 1 25%']);
+		});
+		
+		test('crossfade twice', function() {
+		    stage([]);
+			stage([], 1000);
+			stage([], 1000);
+			advance(250);
+			
+			assertEqual(events, [
+				'start 0',
+				'start 1',
+				'stop 0',
+				'start 2',
+				'fade 1 75%',
+				'fade 2 25%'
+			]);
+		});
 	});
 });

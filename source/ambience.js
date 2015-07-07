@@ -1,10 +1,6 @@
 'use strict';
 
-var ambience = {
-    start: {}
-};
-
-ambience.start.scene = function(items, fadeInDuration, outside) {
+var ambience = function(items, fadeInDuration, outside) {
     var startTime = outside.time();
     var hasEnded = false;
     var handles = [];
@@ -28,7 +24,7 @@ ambience.start.scene = function(items, fadeInDuration, outside) {
         sceneHandle = outside.start.scene ? outside.start.scene(update) : { stop: nothing, fade: nothing };
         handles = items.map(function(item) {
             if ( item.type === 'sound' ) {
-                return ambience.start.sound(item, outside);
+                return ambience.sound(item, outside);
             }
             else {
                 return outside.start[item.type](item, update);
@@ -97,7 +93,7 @@ ambience.start.scene = function(items, fadeInDuration, outside) {
     function nothing() {}
 };
 
-ambience.start.sound = function(sound, outside) {
+ambience.sound = function(sound, outside) {
     var loop = 'loop' in sound ? sound.loop : true;
     var shuffle = 'shuffle' in sound ? sound.shuffle : true;
     var overlap = sound.overlap || 0;
@@ -162,3 +158,18 @@ ambience.start.sound = function(sound, outside) {
     
     function nothing() {}
 };
+
+ambience.stage = function(outside) {
+    var abort = nothing;
+    var stop = function() {
+        return nothing;
+    };
+    
+    return function start(items, fadeInDuration) {
+        abort();
+        abort = stop(fadeInDuration);
+        stop = ambience(items, fadeInDuration, outside);
+    }
+    
+    function nothing() {}
+}
