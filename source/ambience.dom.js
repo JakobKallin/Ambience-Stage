@@ -26,6 +26,24 @@ ambience.dom = function(container) {
                     container.removeChild(element);
                 }
             };
+        },
+        track: function(url, update) {
+            var element = document.createElement('audio');
+            element.src = url;
+            element.play();
+            container.appendChild(element);
+            
+            element.addEventListener('timeupdate', update);
+            
+            return {
+                stop: function() {
+                    element.pause();
+                    container.removeChild(element);
+                },
+                fade: function(volume) {
+                    element.volume = volume;
+                }
+            };
         }
     };
 };

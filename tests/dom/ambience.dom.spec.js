@@ -45,6 +45,14 @@ suite('Ambience DOM', function() {
 	});
 	
 	suite('image', function() {
+		function withoutUrl(value) {
+			return value.replace(/^url\(('|")?/g, '').replace(/('|")?\)$/g, '');
+		}
+		
+		function absolute(url) {
+			return location.href + url;
+		}
+		
 		test('start', function() {
 	    	start.image({ url: 'transparent-10.png' });
 			
@@ -54,14 +62,6 @@ suite('Ambience DOM', function() {
 				absolute('transparent-10.png')
 			);
 		});
-		
-		function withoutUrl(value) {
-		    return value.replace(/^url\(('|")?/g, '').replace(/('|")?\)$/g, '');
-		}
-		
-		function absolute(url) {
-		    return location.href + url;
-		}
 		
 		test('stop', function() {
 	    	var handle = start.image({ url: 'transparent-10.png' });
@@ -96,6 +96,84 @@ suite('Ambience DOM', function() {
 			});
 			
 			assertEqual(container.children[0].style.backgroundSize, 'cover');
+		});
+	});
+	
+	suite('track', function() {
+		test('start', function() {
+			start.track('silence-1.ogg');
+			var element = container.children[0];
+			
+			assertEqual(container.children.length, 1);
+			assertEqual(element.getAttribute('src'), 'silence-1.ogg');
+			assertEqual(element.paused, false);
+		});
+		
+		test('stop', function() {
+			var handle = start.track('silence-1.ogg');
+			var element = container.children[0];
+			handle.stop();
+			
+			assertEqual(container.children.length, 0);
+			assertEqual(element.paused, true);
+		});
+		
+		test('stop one of many', function() {
+			var first = start.track('silence-1.ogg#1');
+			var second = start.track('silence-1.ogg#2');
+			var third = start.track('silence-1.ogg#3');
+			var element = container.children[1];
+			second.stop();
+			
+			assertEqual(container.children.length, 2);
+			assertEqual(
+				container.children[0].getAttribute('src'),
+				'silence-1.ogg#1'
+			);
+			assertEqual(
+				container.children[1].getAttribute('src'),
+				'silence-1.ogg#3'
+			);
+			assertEqual(element.paused, true);
+		});
+		
+		test('fade transparent', function() {
+	    	var handle = start.track('silence-1.ogg');
+			handle.fade(0);
+			
+			assertEqual(container.children[0].volume, 0);
+		});
+		
+		test('fade semi-transparent', function() {
+			var handle = start.track('silence-1.ogg');
+			handle.fade(0.5);
+			
+			assertEqual(container.children[0].volume, 0.5);
+		});
+		
+		test('fade opaque', function() {
+			var handle = start.track('silence-1.ogg');
+			handle.fade(1);
+			
+			assertEqual(container.children[0].volume, 1);
+		});
+		
+		test('update', function() {
+			var updates = 0;
+		    var handle = start.track('silence-1.ogg', function() {
+		        updates += 1;
+		    });
+			
+			return new Promise(function(resolve, reject) {
+			    setTimeout(function() {
+					// The `timeupdate` event only triggers a few times per 
+					// second, so let's check for a reasonable range to get a 
+					// decent confidence in our result.
+					assertAbove(updates, 2);
+					assertBelow(updates, 10);
+					resolve();
+			    }, 1500);
+			});
 		});
 	});
 });
