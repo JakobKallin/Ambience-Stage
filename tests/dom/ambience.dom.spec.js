@@ -180,6 +180,9 @@ suite('Ambience DOM', function() {
 			});
 		});
 		
+		// The HTML5 spec says that `timeupdate` should trigger when an audio 
+		// file ends, so this should not require a special case in the 
+		// implementation.
 		test('update on end', function() {
 			var latestUpdate;
 			var handle = start.track('silence-1.ogg', function() {
