@@ -107,7 +107,6 @@ ambience.sound = function(sound, outside) {
         tracks = shuffleArray(tracks);
     }
     
-    var counter = 1;
     var updateLatest = startTrack(0);
     
     return {
