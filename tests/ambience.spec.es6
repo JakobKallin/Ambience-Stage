@@ -730,6 +730,132 @@ suite('Ambience', function() {
 			assertEqual(events, ['start one', 'stop one', 'start one']);
 		});
 		
+		test('sound starts', function() {
+			watchSoundEvents(defaultCallbacks);
+			start([{
+				type: 'sound',
+				tracks: ['one'],
+				loop: false
+			}]);
+			
+			assertEqual(events, ['start', 'start one']);
+		});
+		
+		test('non-looping sound stops', function() {
+			watchSoundEvents(defaultCallbacks);
+			start([{
+				type: 'sound',
+				tracks: ['one'],
+				loop: false
+			}]);
+			advance(1);
+			
+			assertEqual(events, ['start', 'start one', 'stop one', 'stop']);
+		});
+		
+		test('looping sound does not stop', function() {
+			watchSoundEvents(defaultCallbacks);
+			start([{
+				type: 'sound',
+				tracks: ['one'],
+				loop: true
+			}]);
+			advance(1);
+			
+			assertEqual(events, ['start', 'start one', 'stop one', 'start one']);
+		});
+		
+		test('non-looping sound stops, two tracks', function() {
+			watchSoundEvents(defaultCallbacks);
+			start([{
+				type: 'sound',
+				tracks: ['one', 'two'],
+				loop: false
+			}]);
+			advance(1);
+			advance(1);
+			
+			assertEqual(events, ['start', 'start one', 'stop one', 'start two', 'stop two', 'stop']);
+		});
+		
+		function watchSoundEvents(callbacks) {
+		    callbacks.start.sound = function() {
+		        events.push('start');
+				return function stop() {
+				    events.push('stop');
+				};
+		    };
+		}
+		
+		test('non-looping sound-only scene stops after last track', function() {
+			start([{
+				type: 'sound',
+				tracks: ['one'],
+				loop: false
+			}], sceneCallbacks());
+			advance(1);
+			
+			assertEqual(events, ['start scene', 'start sound', 'stop sound', 'stop scene']);
+		});
+		
+		test('looping sound-only scene does not stop after last track', function() {
+			start([{
+				type: 'sound',
+				tracks: ['one'],
+				loop: true
+			}], sceneCallbacks());
+			advance(1);
+			
+			assertEqual(events, ['start scene', 'start sound']);
+		});
+		
+		test('non-looping sound scene with other media does not stop after last track', function() {
+			start([
+				{
+					type: 'sound',
+					tracks: ['one'],
+					loop: false
+				},
+				{ type: 'image', url: 'image' }
+			], sceneCallbacks());
+			advance(1);
+			
+			assertEqual(events, ['start scene', 'start sound', 'stop sound']);
+		});
+		
+		function sceneCallbacks() {
+		    return {
+				start: {
+					scene: function() {
+					    events.push('start scene');
+						return {
+							stop: function() {
+						    	events.push('stop scene');
+							},
+							fade: nothing
+						};
+					},
+					sound: function() {
+					    events.push('start sound');
+						return function() {
+						    events.push('stop sound');
+						};
+					},
+					track: function(url, update) {
+					    updates.push(update);
+						return {
+							stop: nothing,
+							duration: constant(1)
+						};
+					},
+					image: constant(nothing)
+				},
+				time: function() {
+				    return time;
+				}
+			};
+		}
+		
 		function constant(value) {
 			return function() {
 				return value;

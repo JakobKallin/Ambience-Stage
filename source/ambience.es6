@@ -24,6 +24,12 @@ var ambience = function(items, fadeInDuration, outside) {
         sceneHandle = outside.start.scene ? outside.start.scene(update) : { stop: nothing, fade: nothing };
         handles = items.map(function(item) {
             if ( item.type === 'sound' ) {
+                // This stops the scene after the first non-looping sound, even
+                // if there are multiple. Preferable it should stop only after
+                // the last one.
+                if ( onlySound(items) ) {
+                    outside.start.sound = stopSceneAfterwards(outside.start.sound);
+                }
                 return ambience.sound(item, outside);
             }
             else {
@@ -31,6 +37,21 @@ var ambience = function(items, fadeInDuration, outside) {
             }
         });
         return stop;
+    }
+    
+    function onlySound(items) {
+        return items.every(i => i.type === 'sound');
+    }
+    
+    function stopSceneAfterwards(startSound) {
+        var startSound = startSound || constant(nothing);
+        return function() {
+            var stopSound = startSound();
+            return function() {
+                stopSound();
+                stop(0);
+            };
+        };
     }
     
     function update() {
@@ -91,6 +112,12 @@ var ambience = function(items, fadeInDuration, outside) {
 	}
     
     function nothing() {}
+    
+    function constant(value) {
+        return function() {
+            return value;
+        };
+    }
 };
 
 ambience.sound = function(sound, outside) {
@@ -107,6 +134,9 @@ ambience.sound = function(sound, outside) {
         tracks = shuffleArray(tracks);
     }
     
+    if ( outside.start.sound ) {
+        var soundHandle = outside.start.sound();
+    }
     var updateLatest = startTrack(0);
     
     return {
@@ -146,6 +176,9 @@ ambience.sound = function(sound, outside) {
                     // stop the track too many times if the update function is
                     // called more than once.
                     updateNext = nothing;
+                    if ( soundHandle ) {
+                        soundHandle();
+                    }
                 }
             }
             
