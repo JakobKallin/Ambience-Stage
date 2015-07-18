@@ -1,6 +1,4 @@
-'use strict';
-
-ambience.dom = function(container) {
+export default function dom(container) {
     return {
         scene: function() {
             return {

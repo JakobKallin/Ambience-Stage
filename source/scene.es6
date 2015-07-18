@@ -1,6 +1,6 @@
-'use strict';
+import startSound from './sound.js';
 
-var ambience = function(items, fadeInDuration, outside) {
+export default function startScene(items, fadeInDuration, outside) {
     var startTime = outside.time();
     var hasEnded = false;
     var handles = [];
@@ -30,7 +30,7 @@ var ambience = function(items, fadeInDuration, outside) {
                 if ( onlySound(items) ) {
                     outside.start.sound = stopSceneAfterwards(outside.start.sound);
                 }
-                return ambience.sound(item, outside);
+                return startSound(item, outside);
             }
             else {
                 return outside.start[item.type](item, update);
@@ -119,89 +119,3 @@ var ambience = function(items, fadeInDuration, outside) {
         };
     }
 };
-
-ambience.sound = function(sound, outside) {
-    var loop = 'loop' in sound ? sound.loop : true;
-    var shuffle = 'shuffle' in sound ? sound.shuffle : true;
-    var overlap = sound.overlap || 0;
-    var shuffleArray = outside.shuffle || function(x) { return x; };
-    
-    var tracks = sound.tracks.slice();
-    if ( sound.tracks.length === 0 ) {
-        throw new Error('Cannot start sound without tracks.');
-    } 
-    if ( shuffle ) {
-        tracks = shuffleArray(tracks);
-    }
-    
-    if ( outside.start.sound ) {
-        var soundHandle = outside.start.sound();
-    }
-    var updateLatest = startTrack(0);
-    
-    return {
-        stop: nothing
-    };
-    
-    function updateSound() {
-        updateLatest();
-    }
-    
-    function startTrack(index) {
-        var startTime = outside.time();
-        var handle = outside.start.track(tracks[index], updateSound);
-        var updateNext = null;
-        
-        return function update() {
-            var currentTime = outside.time();
-            var elapsed = currentTime - startTime;
-            
-            if ( elapsed >= handle.duration() ) {
-                handle.stop();
-            }
-            
-            if ( elapsed >= handle.duration() - overlap && !updateNext ) {
-                if ( (index + 1) in tracks ) {
-                    updateNext = startTrack(index + 1);
-                }
-                else if ( loop ) {
-                    if ( shuffle ) {
-                        tracks = shuffleArray(tracks);
-                    }
-                    updateNext = startTrack(0);
-                }
-                else {
-                    // This must be here because if neither clause above is 
-                    // entered, we will have the same update function and will 
-                    // stop the track too many times if the update function is
-                    // called more than once.
-                    updateNext = nothing;
-                    if ( soundHandle ) {
-                        soundHandle();
-                    }
-                }
-            }
-            
-            if ( elapsed >= handle.duration() && updateNext ) {
-                updateLatest = updateNext;
-            }
-        };
-    }
-    
-    function nothing() {}
-};
-
-ambience.stage = function(outside) {
-    var abort = nothing;
-    var stop = function() {
-        return nothing;
-    };
-    
-    return function start(items, fadeInDuration) {
-        abort();
-        abort = stop(fadeInDuration);
-        stop = ambience(items, fadeInDuration, outside);
-    }
-    
-    function nothing() {}
-}

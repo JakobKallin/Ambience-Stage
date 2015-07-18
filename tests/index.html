@@ -12,13 +12,6 @@
 		<script src="/tests/mocha.js"></script>
 		<script src="/tests/chai.js"></script>
 		<script>mocha.setup('tdd');</script>
-		
-		<script src="/source/ambience.js"></script>
-		<script src="/tests/ambience.spec.js"></script>
-		
-		<script>
-			mocha.checkLeaks();
-			mocha.run();
-		</script>
+		<script src="/require.js" data-main="main"></script>
 	</body>
 </html>

@@ -42,7 +42,6 @@ function copyFolder(source, target) {
 function compileSources(root) {
     compileFolder(join(root, 'source'));
     compileFolder(join(root, 'tests'));
-    compileFolder(join(root, join('tests', 'dom')));
     
     console.log('Build complete');
 }
@@ -53,7 +52,7 @@ function compileFolder(folder) {
         var esPath = join(folder, filename);
         if ( path.extname(esPath) === '.es6' ) {
             var jsPath = join(folder, path.basename(esPath, '.es6') + '.js');
-            var js = babel.transformFileSync(esPath).code;
+            var js = babel.transformFileSync(esPath, { modules: 'amd' }).code;
             if ( fs.existsSync(jsPath) ) {
                 console.error('Already exists: ' + jsPath);
             }
