@@ -42,6 +42,7 @@ function copyFolder(source, target) {
 function compileSources(root) {
     compileFolder(join(root, 'source'));
     compileFolder(join(root, 'tests'));
+    compileFolder(join(root, 'tests', 'specs'));
     
     console.log('Build complete');
 }
