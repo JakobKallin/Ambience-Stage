@@ -529,6 +529,18 @@ export default function() {
         assertEqual(events, ['start scene', 'start sound', 'stop sound']);
     });
     
+    test('non-looping sound stops during fade-out', () => {
+        var stop = start([{
+            type: 'sound',
+            tracks: ['one'],
+            loop: false
+        }], sceneCallbacks());
+        stop(2);
+        advance(1);
+        
+        assertEqual(events, ['start scene', 'start sound', 'stop sound', 'stop scene']);
+    });
+    
     function sceneCallbacks() {
         return {
             start: {
