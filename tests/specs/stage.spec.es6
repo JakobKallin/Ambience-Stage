@@ -1,5 +1,5 @@
-import stage from '/source/stage.js';
-import Timer from '/tests/timer.js';
+import stage from '../../source/stage.js';
+import Timer from '../timer.js';
 
 export default function() {
     var assert = chai.assert;

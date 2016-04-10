@@ -1,11 +1,10 @@
-import dom from '/source/dom.js'
+import dom from '../../source/dom.js'
 
 export default function() {
 	var assert = chai.assert;
 	var assertEqual = chai.assert.deepEqual;
 	var assertAbove = chai.assert.isAbove;
 	var assertBelow = chai.assert.isBelow;
-	chai.config.truncateThreshold = 0;
 	
 	var container;
 	var start;
