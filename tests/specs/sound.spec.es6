@@ -105,6 +105,39 @@ export default function() {
         assertEqual(events, ['start one', 'stop one']);
     });
     
+    test('track does not stop until duration is known', () => {
+        // Change the callbacks so that NaN is returned from the first and
+        // second call to `duration`.
+        const defaultStartTrack = defaultCallbacks.start.track;
+        defaultCallbacks.start.track = (url, update) => {
+            const handle = defaultStartTrack(url, update);
+            const originalDuration = handle.duration;
+            let called = 0;
+            handle.duration = () => {
+                called += 1;
+                if (called <= 2) {
+                    return NaN;
+                }
+                else {
+                    return originalDuration();
+                }
+            }
+            return handle;
+        };
+        
+        start([{
+            type: 'sound',
+            tracks: ['one'],
+            loop: false
+        }]);
+        advance(0);
+        advance(1.1);
+        assertEqual(events, ['start one']);
+        
+        advance(0.1);
+        assertEqual(events, ['start one', 'stop one']);
+    });
+    
     test('two tracks, no loop', function() {
         start([{
             type: 'sound',

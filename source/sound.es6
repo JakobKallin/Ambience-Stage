@@ -34,11 +34,17 @@ export default function startSound(sound, outside) {
             var currentTime = outside.time();
             var elapsed = currentTime - startTime;
             
-            if ( elapsed >= handle.duration() ) {
+            const duration = handle.duration();
+            // Duration not known yet, so don't attempt any overlap until it is.
+            if (isNaN(duration)) {
+                return;
+            }
+            
+            if ( elapsed >= duration ) {
                 handle.stop();
             }
             
-            if ( elapsed >= handle.duration() - overlap && !updateNext ) {
+            if ( elapsed >= duration - overlap && !updateNext ) {
                 if ( (index + 1) in tracks ) {
                     updateNext = startTrack(index + 1);
                 }
@@ -60,7 +66,7 @@ export default function startSound(sound, outside) {
                 }
             }
             
-            if ( elapsed >= handle.duration() && updateNext ) {
+            if ( elapsed >= duration && updateNext ) {
                 updateLatest = updateNext;
             }
         };
