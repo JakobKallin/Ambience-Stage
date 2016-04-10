@@ -99,17 +99,17 @@ export default function startScene(items, fadeInDuration, outside) {
         }
     }
     
-	function fadeRatio(startTime, currentTime, duration) {
+    function fadeRatio(startTime, currentTime, duration) {
         var elapsed = currentTime - startTime;
-		if ( duration === 0 ) {
-			return 1;
-		}
-		else {
-			var ratio = elapsed / duration;
-			var boundedRatio = Math.min(Math.max(ratio, 0), 1);
-			return boundedRatio;
-		}
-	}
+        if ( duration === 0 ) {
+            return 1;
+        }
+        else {
+            var ratio = elapsed / duration;
+            var boundedRatio = Math.min(Math.max(ratio, 0), 1);
+            return boundedRatio;
+        }
+    }
     
     function nothing() {}
     
