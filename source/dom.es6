@@ -40,7 +40,8 @@ export default function dom(container) {
                 },
                 fade: function(volume) {
                     element.volume = volume;
-                }
+                },
+                duration: () => element.duration
             };
         }
     };

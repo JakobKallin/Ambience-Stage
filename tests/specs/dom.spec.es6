@@ -196,5 +196,19 @@ export default function() {
                 }, 1500);
             });
         });
+        
+        test('duration', () => {
+            const handle = start.track('silence-1.ogg', function() {});
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    const duration = handle.duration();
+                    // Allow for some leeway in case the browser does not
+                    // consider the file *exactly* one second long.
+                    assertAbove(duration, 0.9);
+                    assertBelow(duration, 1.1);
+                    resolve();
+                }, 1500);
+            });
+        });
     });
 };
