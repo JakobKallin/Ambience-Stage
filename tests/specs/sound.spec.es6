@@ -517,6 +517,31 @@ export default function() {
         assertEqual(events, ['start', 'start one', 'stop one', 'start two', 'stop two', 'stop']);
     });
     
+    test('tracks stop after sound is stopped', () => {
+        watchSoundEvents(defaultCallbacks);
+        const stop = start([{
+            type: 'sound',
+            tracks: ['one']
+        }]);
+        advance(0.5);
+        stop(0);
+        
+        assertEqual(events, ['start', 'start one', 'stop one', 'stop']);
+    });
+    
+    test('tracks stop after sound is stopped during overlap', () => {
+        watchSoundEvents(defaultCallbacks);
+        const stop = start([{
+            type: 'sound',
+            tracks: ['one', 'two'],
+            overlap: 0.5
+        }]);
+        advance(0.75);
+        stop(0);
+        
+        assertEqual(events, ['start', 'start one', 'start two', 'stop one', 'stop two', 'stop']);
+    });
+    
     function watchSoundEvents(callbacks) {
         callbacks.start.sound = function() {
             events.push('start');

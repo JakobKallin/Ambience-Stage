@@ -12,13 +12,17 @@ export default function startSound(sound, outside) {
         tracks = shuffleArray(tracks);
     }
     
-    if ( outside.start.sound ) {
-        var soundHandle = outside.start.sound();
-    }
+    const stopOutsideSound = outside.start.sound ? outside.start.sound() : nothing;
+    const outsideTracks = [];
     var updateLatest = startTrack(0);
     
+    const stopSound = once(() => {
+        outsideTracks.forEach(t => t.stop());
+        stopOutsideSound();
+    });
+    
     return {
-        stop: nothing
+        stop: stopSound
     };
     
     function updateSound() {
@@ -27,24 +31,27 @@ export default function startSound(sound, outside) {
     
     function startTrack(index) {
         var startTime = outside.time();
-        var handle = outside.start.track(tracks[index], updateSound);
-        var updateNext = null;
+        const outsideTrack = outside.start.track(tracks[index], updateSound);
+        outsideTrack.stop = once(outsideTrack.stop);
+        outsideTracks.push(outsideTrack);
+        var updateNext = nothing;
         
         return function update() {
             var currentTime = outside.time();
             var elapsed = currentTime - startTime;
             
-            const duration = handle.duration();
+            const duration = outsideTrack.duration();
             // Duration not known yet, so don't attempt any overlap until it is.
             if (isNaN(duration)) {
                 return;
             }
             
             if ( elapsed >= duration ) {
-                handle.stop();
+                outsideTrack.stop();
+                outsideTracks.splice(outsideTracks.indexOf(outsideTrack, 1));
             }
             
-            if ( elapsed >= duration - overlap && !updateNext ) {
+            if ( elapsed >= duration - overlap && updateNext === nothing ) {
                 if ( (index + 1) in tracks ) {
                     updateNext = startTrack(index + 1);
                 }
@@ -54,23 +61,29 @@ export default function startSound(sound, outside) {
                     }
                     updateNext = startTrack(0);
                 }
-                else {
-                    // This must be here because if neither clause above is 
-                    // entered, we will have the same update function and will 
-                    // stop the track too many times if the update function is
-                    // called more than once.
-                    updateNext = nothing;
-                    if ( soundHandle ) {
-                        soundHandle();
-                    }
-                }
             }
             
-            if ( elapsed >= duration && updateNext ) {
-                updateLatest = updateNext;
+            if (elapsed >= duration) {
+                if (updateNext === nothing) {
+                    stopSound();
+                }
+                else {
+                    updateLatest = updateNext;
+                }
             }
         };
     }
     
     function nothing() {}
+    
+    function once(callback) {
+        const args = arguments;
+        let called = false;
+        return () => {
+            if (!called) {
+                called = true;
+                callback.apply(undefined, args);
+            }
+        };
+    }
 };
