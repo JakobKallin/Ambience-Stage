@@ -1,4 +1,5 @@
-import dom from '../../source/dom.js'
+import createDom from '../../source/dom.js'
+import createStage from '../../source/stage.js'
 
 export default function() {
     var assert = chai.assert;
@@ -6,37 +7,37 @@ export default function() {
     var assertAbove = chai.assert.isAbove;
     var assertBelow = chai.assert.isBelow;
     
-    var container;
-    var start;
+    let container;
+    let dom;
     
     setup(function() {
         container = document.createElement('div');
-        start = dom(container);
+        dom = createDom(container);
     });
     
     suite('scene', function() {
         test('fade transparent', function() {
-            var handle = start.scene();
-            handle.fade(0);
+            var handle = dom.start.scene();
+            handle.fade.step(0);
             
-            assertEqual(parseFloat(container.style.opacity), 0);
+            assertEqual(parseFloat(container.querySelector('.scene').style.opacity), 0);
         });
         
         test('fade semi-transparent', function() {
-            var handle = start.scene();
-            handle.fade(0.5);
+            var handle = dom.start.scene();
+            handle.fade.step(0.5);
             
-            assertEqual(parseFloat(container.style.opacity), 0.5);
+            assertEqual(parseFloat(container.querySelector('.scene').style.opacity), 0.5);
         });
         
         test('fade opaque', function() {
-            var handle = start.scene();
-            handle.fade(1);
+            var handle = dom.start.scene();
+            handle.fade.step(1);
             
             // We don't want to set opacity to exactly one because that might 
             // change the rendering method for text and introduce a noticeable 
             // "jump" visually.
-            var opacity = parseFloat(container.style.opacity);
+            var opacity = parseFloat(container.querySelector('.scene').style.opacity);
             assertAbove(opacity, 0.99);
             assertBelow(opacity, 1);
         });
@@ -56,7 +57,7 @@ export default function() {
         }
         
         test('start', function() {
-            start.image({ url: url('transparent-10.png') });
+            dom.start.image({ url: url('transparent-10.png') });
             
             assertEqual(container.children.length, 1);
             assertEqual(
@@ -66,16 +67,16 @@ export default function() {
         });
         
         test('stop', function() {
-            var handle = start.image({ url: url('transparent-10.png') });
+            var handle = dom.start.image({ url: url('transparent-10.png') });
             handle.stop();
             
             assertEqual(container.children.length, 0);
         });
         
         test('stop one of many', function() {
-            var first = start.image({ url: url('transparent-10.png#1') });
-            var second = start.image({ url: url('transparent-10.png#2') });
-            var third = start.image({ url: url('transparent-10.png#3') });
+            var first = dom.start.image({ url: url('transparent-10.png#1') });
+            var second = dom.start.image({ url: url('transparent-10.png#2') });
+            var third = dom.start.image({ url: url('transparent-10.png#3') });
             second.stop();
             
             assertEqual(container.children.length, 2);
@@ -90,7 +91,7 @@ export default function() {
         });
         
         test('style', function() {
-            start.image({
+            dom.start.image({
                 url: url('transparent-10.png'),
                 style: {
                     backgroundSize: 'cover'
@@ -103,7 +104,7 @@ export default function() {
     
     suite('track', function() {
         test('start', function() {
-            start.track('silence-1.ogg');
+            dom.start.track('silence-1.ogg');
             var element = container.children[0];
             
             assertEqual(container.children.length, 1);
@@ -112,7 +113,7 @@ export default function() {
         });
         
         test('stop', function() {
-            var handle = start.track('silence-1.ogg');
+            var handle = dom.start.track('silence-1.ogg');
             var element = container.children[0];
             handle.stop();
             
@@ -121,9 +122,9 @@ export default function() {
         });
         
         test('stop one of many', function() {
-            var first = start.track('silence-1.ogg#1');
-            var second = start.track('silence-1.ogg#2');
-            var third = start.track('silence-1.ogg#3');
+            var first = dom.start.track('silence-1.ogg#1');
+            var second = dom.start.track('silence-1.ogg#2');
+            var third = dom.start.track('silence-1.ogg#3');
             var element = container.children[1];
             second.stop();
             
@@ -140,29 +141,29 @@ export default function() {
         });
         
         test('fade transparent', function() {
-            var handle = start.track('silence-1.ogg');
-            handle.fade(0);
+            var handle = dom.start.track('silence-1.ogg');
+            handle.fade.step(0);
             
             assertEqual(container.children[0].volume, 0);
         });
         
         test('fade semi-transparent', function() {
-            var handle = start.track('silence-1.ogg');
-            handle.fade(0.5);
+            var handle = dom.start.track('silence-1.ogg');
+            handle.fade.step(0.5);
             
             assertEqual(container.children[0].volume, 0.5);
         });
         
         test('fade opaque', function() {
-            var handle = start.track('silence-1.ogg');
-            handle.fade(1);
+            var handle = dom.start.track('silence-1.ogg');
+            handle.fade.step(1);
             
             assertEqual(container.children[0].volume, 1);
         });
         
         test('update', function() {
             var updates = 0;
-            var handle = start.track('silence-1.ogg', function() {
+            var handle = dom.start.track('silence-1.ogg', function() {
                 updates += 1;
             });
             
@@ -183,7 +184,7 @@ export default function() {
         // implementation.
         test('update on end', function() {
             var latestUpdate;
-            var handle = start.track('silence-1.ogg', function() {
+            var handle = dom.start.track('silence-1.ogg', function() {
                 console.log(element.currentTime);
                 latestUpdate = element.currentTime;
             });
@@ -198,7 +199,7 @@ export default function() {
         });
         
         test('duration', () => {
-            const handle = start.track('silence-1.ogg', function() {});
+            const handle = dom.start.track('silence-1.ogg', function() {});
             return new Promise((resolve, reject) => {
                 setTimeout(() => {
                     const duration = handle.duration();
@@ -208,6 +209,67 @@ export default function() {
                     assertBelow(duration, 1.1);
                     resolve();
                 }, 1500);
+            });
+        });
+    });
+    
+    suite('complete', () => {
+        test('single scene', () => {
+            const stage = createStage(createDom(container));
+            stage([
+                { type: 'image', url: 'transparent-10.png' },
+                { type: 'sound', tracks: ['silence-1.ogg'] }
+            ]);
+            
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    assertAbove(container.querySelector('.scene').style.opacity, 0.99);
+                    assert(container.querySelector('.image').style.backgroundImage.includes('transparent-10.png'));
+                    assertEqual(container.querySelector('.track').volume, 1);
+                    assert(!container.querySelector('.track').paused);
+                    resolve();
+                }, 0);
+            });
+        });
+        
+        test('crossfading scenes', () => {
+            return new Promise((resolve, reject) => {
+                const stage = createStage(createDom(container));
+                stage([
+                    { type: 'image', url: 'transparent-10.png' },
+                    { type: 'sound', tracks: ['silence-10.ogg'] }
+                ], 500);
+                
+                setTimeout(() => {
+                    stage([
+                        { type: 'image', url: 'transparent-10.png' },
+                        { type: 'sound', tracks: ['silence-10.ogg'] }
+                    ], 500);
+                    
+                    setTimeout(() => {
+                        const scenes = container.querySelectorAll('.scene');
+                        const tracks = container.querySelectorAll('.track');
+                        assertAbove(scenes[0].style.opacity, 0.45);
+                        assertBelow(scenes[0].style.opacity, 0.55);
+                        assertAbove(scenes[1].style.opacity, 0.45);
+                        assertBelow(scenes[1].style.opacity, 0.55);
+                        assertAbove(tracks[0].volume, 0.45);
+                        assertBelow(tracks[0].volume, 0.55);
+                        assertAbove(tracks[1].volume, 0.45);
+                        assertBelow(tracks[1].volume, 0.55);
+                        assert(!tracks[0].paused);
+                        assert(!tracks[1].paused);
+                    }, 250);
+                    
+                    setTimeout(() => {
+                        const track = container.querySelector('.track');
+                        assertEqual(container.querySelectorAll('.scene').length, 1);
+                        assertAbove(container.querySelector('.scene').style.opacity, 0.99);
+                        assertEqual(track.volume, 1);
+                        assert(!track.paused);
+                        resolve();
+                    }, 750);
+                }, 750);
             });
         });
     });

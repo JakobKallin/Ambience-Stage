@@ -1,6 +1,7 @@
 import startSound from './sound.js';
 
 export default function startScene(items, fadeInDuration, outside) {
+    fadeInDuration = fadeInDuration || 0;
     var startTime = outside.time();
     var hasEnded = false;
     var handles = [];
@@ -8,12 +9,13 @@ export default function startScene(items, fadeInDuration, outside) {
     
     var updateFade = function updateFadeIn() {
         var ratio = fadeRatio(startTime, outside.time(), fadeInDuration);
-        sceneHandle.fade(ratio);
+        sceneHandle.fade.step(ratio);
         handles.forEach(function(handle) {
-            handle.fade(ratio);
+            if (handle.fade) handle.fade(ratio);
         });
         
         if ( ratio === 1 ) {
+            sceneHandle.fade.stop();
             updateFade = nothing;
         }
     };
@@ -21,7 +23,16 @@ export default function startScene(items, fadeInDuration, outside) {
     return start(items, fadeInDuration, outside);
     
     function start(items, fadeInDuration, outside) {
-        sceneHandle = outside.start.scene ? outside.start.scene(update) : { stop: nothing, fade: nothing };
+        sceneHandle = outside.start.scene ? outside.start.scene(update) : {};
+        sceneHandle = sceneHandle || {};
+        sceneHandle.stop = sceneHandle.stop || nothing;
+        sceneHandle.fade = sceneHandle.fade || {};
+        sceneHandle.fade.start = sceneHandle.fade.start || nothing;
+        sceneHandle.fade.step = sceneHandle.fade.step || nothing;
+        sceneHandle.fade.stop = sceneHandle.fade.stop || nothing;
+        
+        sceneHandle.fade.start();
+        
         handles = items.map(function(item) {
             if ( item.type === 'sound' ) {
                 // This stops the scene after the first non-looping sound, even
@@ -36,6 +47,7 @@ export default function startScene(items, fadeInDuration, outside) {
                 return outside.start[item.type](item, update);
             }
         });
+        
         return stop;
     }
     
@@ -62,12 +74,12 @@ export default function startScene(items, fadeInDuration, outside) {
     }
     
     function update() {
-        updateFade();
         handles.forEach(function(handle) {
             if ( handle.update ) {
                 handle.update();
             }
         });
+        updateFade();
     }
     
     function stop(fadeOutDuration) {
@@ -78,15 +90,16 @@ export default function startScene(items, fadeInDuration, outside) {
         var stopTime = outside.time();
         updateFade = function updateFadeOut() {
             var ratio = fadeRatio(stopTime, outside.time(), fadeOutDuration);
-            sceneHandle.fade(1 - ratio);
+            sceneHandle.fade.step(1 - ratio);
             handles.forEach(function(handle) {
-                handle.fade(ratio);
+                if (handle.fade) handle.fade(ratio);
             });
             
             if ( ratio === 1 ) {
                 end();
             }
         };
+        sceneHandle.fade.start();
         
         if ( fadeOutDuration === 0 ) {
             end();
@@ -102,6 +115,7 @@ export default function startScene(items, fadeInDuration, outside) {
             handles.forEach(function(handle) {
                 handle.stop();
             });
+            sceneHandle.fade.stop();
             sceneHandle.stop();
         }
     }

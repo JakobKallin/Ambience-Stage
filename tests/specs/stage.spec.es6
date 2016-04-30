@@ -27,8 +27,10 @@ export default function() {
                         stop: function() {
                             events.push('stop ' + scene);
                         },
-                        fade: function(ratio) {
-                            events.push('fade ' + scene + ' ' + (ratio * 100) + '%');
+                        fade: {
+                            step: ratio => {
+                                events.push('fade ' + scene + ' ' + (ratio * 100) + '%');
+                            }
                         }
                     };
                 }

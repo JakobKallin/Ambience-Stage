@@ -23,8 +23,10 @@ export default function() {
                         stop: function() {
                             events.push('stop');
                         },
-                        fade: function(ratio) {
-                            events.push('fade ' + (ratio * 100) + '%');
+                        fade: {
+                            step: ratio => {
+                                events.push('fade ' + (ratio * 100) + '%');
+                            }
                         }
                     };
                 }

@@ -59,9 +59,7 @@ with create_temp_dir() as temp_dir_str:
         bundle_exists = bundle_output_path.exists()
         if compilation_needed or not bundle_exists:
             print('Bundle: ' + str(bundle_temp_path))
-            js, error = subprocess.Popen(['browserify', str(main_path), '--debug'], env=dict(
-                os.environ, NODE_PATH=str(temp_dir / 'libraries')
-            ), stdout=subprocess.PIPE).communicate()
+            js, error = subprocess.Popen(['browserify', str(main_path), '--debug'], stdout=subprocess.PIPE).communicate()
             write_file(str(bundle_temp_path), js)
         else:
             print('Copy: ' + str(bundle_output_path) + ' => ' + str(bundle_temp_path))

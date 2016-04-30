@@ -16,22 +16,24 @@ export default function startSound(sound, outside) {
     const outsideTracks = [];
     var updateLatest = startTrack(0);
     
+    const fadeSound = ratio => {
+        outsideTracks.forEach(t => t.fade(ratio));
+    };
+    
     const stopSound = once(() => {
         outsideTracks.forEach(t => t.stop());
         stopOutsideSound();
     });
     
     return {
-        stop: stopSound
+        fade: fadeSound,
+        stop: stopSound,
+        update: () => updateLatest()
     };
-    
-    function updateSound() {
-        updateLatest();
-    }
     
     function startTrack(index) {
         var startTime = outside.time();
-        const outsideTrack = outside.start.track(tracks[index], updateSound);
+        const outsideTrack = outside.start.track(tracks[index]);
         outsideTrack.stop = once(outsideTrack.stop);
         outsideTracks.push(outsideTrack);
         var updateNext = nothing;

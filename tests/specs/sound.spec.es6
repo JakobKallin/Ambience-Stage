@@ -29,8 +29,8 @@ export default function() {
         events = [];
         defaultCallbacks = {
             start: {
-                track: function(url, update) {
-                    timer.track(update);
+                scene: update => timer.track(update),
+                track: function(url) {
                     events.push('start ' + url);
                     return {
                         stop: function() {
@@ -38,15 +38,17 @@ export default function() {
                         },
                         duration: function() {
                             return 1;
-                        }
+                        },
+                        fade: nothing
                     };
                 }
             },
             time: timer.time
         };
-        start = function(items, callbacks) {
+        start = function(items, callbacks, fade) {
+            fade = fade || 0;
             callbacks = callbacks || defaultCallbacks;
-            return ambience(items, 0, callbacks);
+            return ambience(items, fade, callbacks);
         };
     });
     
@@ -109,8 +111,8 @@ export default function() {
         // Change the callbacks so that NaN is returned from the first and
         // second call to `duration`.
         const defaultStartTrack = defaultCallbacks.start.track;
-        defaultCallbacks.start.track = (url, update) => {
-            const handle = defaultStartTrack(url, update);
+        defaultCallbacks.start.track = (url) => {
+            const handle = defaultStartTrack(url);
             const originalDuration = handle.duration;
             let called = 0;
             handle.duration = () => {
@@ -196,7 +198,7 @@ export default function() {
     
     // Just testing with two tracks misses error of the type "first track is
     // always played, second is scheduled right afterwards, but the third
-    // one is scheduled later and using a different method and thus fails",
+    // one is scheduled later using a different method and thus fails",
     // so we try with three tracks to be on the safe side.
     test('three tracks, loop', function() {
         start([{
@@ -602,13 +604,13 @@ export default function() {
     function sceneCallbacks() {
         return {
             start: {
-                scene: function() {
+                scene: update => {
+                    timer.track(update);
                     events.push('start scene');
                     return {
                         stop: function() {
                             events.push('stop scene');
-                        },
-                        fade: nothing
+                        }
                     };
                 },
                 sound: function() {
@@ -617,10 +619,58 @@ export default function() {
                         events.push('stop sound');
                     };
                 },
-                track: function(url, update) {
-                    timer.track(update);
+                track: function(url) {
                     return {
                         stop: nothing,
+                        duration: constant(1),
+                        fade: nothing
+                    };
+                },
+                image: constant(nothing)
+            },
+            time: timer.time
+        };
+    }
+    
+    test('track fades during scene fade', () => {
+        start([{
+            type: 'sound',
+            tracks: ['one']
+        }], fadeCallbacks(), 1)
+        advance(0.5);
+        assertEqual(events, ['start scene', 'start one', 'fade one 50%'])
+    });
+    
+    test('tracks fade during overlap and scene fade', () => {
+        start([{
+            type: 'sound',
+            tracks: ['one', 'two'],
+            overlap: 0.8
+        }], fadeCallbacks(), 1)
+        advance(0.5);
+        assertEqual(events, ['start scene', 'start one', 'start two', 'fade one 50%', 'fade two 50%'])
+    });
+    
+    function fadeCallbacks() {
+        return {
+            start: {
+                scene: update => {
+                    timer.track(update);
+                    events.push('start scene');
+                    return {
+                        stop: function() {
+                            events.push('stop scene');
+                        }
+                    };
+                },
+                sound: () => nothing,
+                track: function(url) {
+                    events.push('start ' + url);
+                    return {
+                        stop: nothing,
+                        fade: ratio => {
+                            events.push('fade ' + url + ' ' + (ratio * 100) + '%');
+                        },
                         duration: constant(1)
                     };
                 },
