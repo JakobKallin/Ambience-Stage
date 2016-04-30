@@ -28,12 +28,19 @@ export default function() {
                             events.push('stop ' + scene);
                         },
                         fade: {
+                            start: () => events.push('start fade ' + scene),
                             step: ratio => {
                                 events.push('fade ' + scene + ' ' + (ratio * 100) + '%');
-                            }
+                            },
+                            stop: () => events.push('stop fade ' + scene)
                         }
                     };
-                }
+                },
+                track: () => ({
+                    duration: () => 1,
+                    fade: function() {},
+                    stop: function() {}
+                })
             },
             time: timer.time
         });
@@ -61,5 +68,13 @@ export default function() {
             'fade 1 75%',
             'fade 2 25%'
         ]);
+    });
+    
+    test('sound-only', () => {
+        start([{ type: 'sound', tracks: ['one'], loop: false }], 0);
+        advance(0);
+        start([{ type: 'sound', tracks: ['two'], loop: false }], 0);
+        advance(0);
+        assertEqual(events, ['start 0', 'stop 0', 'start 1', 'stop 1', 'start 2', 'stop 2']);
     });
 };

@@ -632,13 +632,23 @@ export default function() {
         };
     }
     
-    test('track fades during scene fade', () => {
+    test('track fades in during scene fade-in', () => {
         start([{
             type: 'sound',
             tracks: ['one']
-        }], fadeCallbacks(), 1)
-        advance(0.5);
-        assertEqual(events, ['start scene', 'start one', 'fade one 50%'])
+        }], fadeCallbacks(), 1);
+        advance(0.25);
+        assertEqual(events, ['start scene', 'start one', 'fade one 25%']);
+    });
+    
+    test('track fades out during scene fade-out', () => {
+        const stop = start([{
+            type: 'sound',
+            tracks: ['one']
+        }], fadeCallbacks());
+        stop(1);
+        advance(0.25);
+        assertEqual(events, ['start scene', 'start one', 'fade one 75%']);
     });
     
     test('tracks fade during overlap and scene fade', () => {
@@ -646,10 +656,11 @@ export default function() {
             type: 'sound',
             tracks: ['one', 'two'],
             overlap: 0.8
-        }], fadeCallbacks(), 1)
+        }], fadeCallbacks(), 1);
         advance(0.5);
         assertEqual(events, ['start scene', 'start one', 'start two', 'fade one 50%', 'fade two 50%'])
     });
+    
     
     function fadeCallbacks() {
         return {

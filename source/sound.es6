@@ -1,4 +1,4 @@
-export default function startSound(sound, outside) {
+export default function startSound(sound, outside, abortSceneIfSoundOnly) {
     var loop = 'loop' in sound ? sound.loop : true;
     var shuffle = 'shuffle' in sound ? sound.shuffle : true;
     var overlap = sound.overlap || 0;
@@ -23,6 +23,7 @@ export default function startSound(sound, outside) {
     const stopSound = once(() => {
         outsideTracks.forEach(t => t.stop());
         stopOutsideSound();
+        abortSceneIfSoundOnly();
     });
     
     return {
@@ -79,12 +80,11 @@ export default function startSound(sound, outside) {
     function nothing() {}
     
     function once(callback) {
-        const args = arguments;
         let called = false;
         return () => {
             if (!called) {
                 called = true;
-                callback.apply(undefined, args);
+                callback.apply(undefined, arguments);
             }
         };
     }

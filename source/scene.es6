@@ -19,9 +19,7 @@ export default function startScene(items, fadeInDuration, outside) {
             updateFade = nothing;
         }
     };
-    
-    return start(items, fadeInDuration, outside);
-    
+        
     function start(items, fadeInDuration, outside) {
         sceneHandle = outside.start.scene ? outside.start.scene(update) : {};
         sceneHandle = sceneHandle || {};
@@ -35,13 +33,9 @@ export default function startScene(items, fadeInDuration, outside) {
         
         handles = items.map(function(item) {
             if ( item.type === 'sound' ) {
-                // This stops the scene after the first non-looping sound, even
-                // if there are multiple. Preferable it should stop only after
-                // the last one.
-                if ( onlySound(items) ) {
-                    outside.start.sound = stopSceneAfterwards(outside.start.sound);
-                }
-                return startSound(item, outside);
+                return startSound(item, outside, () => {
+                    if (onlySound(items)) end();
+                });
             }
             else {
                 return outside.start[item.type](item, update);
@@ -55,23 +49,23 @@ export default function startScene(items, fadeInDuration, outside) {
         return items.every(i => i.type === 'sound');
     }
     
-    function stopSceneAfterwards(startSound) {
-        var startSound = startSound || constant(nothing);
-        return function() {
-            var stopSound = startSound();
-            let soundStopped = false;
-            return function() {
-                // Once `stop` is called below, all of the stop handles will be
-                // called in turn, which includes this very function. We thus
-                // prevent it from being called twice.
-                if (!soundStopped) {
-                    soundStopped = true;
-                    stopSound();
-                    stop(0);
-                }
-            };
-        };
-    }
+    // function stopSceneAfterwards(startSound) {
+    //     var startSound = startSound || constant(nothing);
+    //     return function() {
+    //         var stopSound = startSound();
+    //         let soundStopped = false;
+    //         return function() {
+    //             // Once `stop` is called below, all of the stop handles will be
+    //             // called in turn, which includes this very function. We thus
+    //             // prevent it from being called twice.
+    //             if (!soundStopped) {
+    //                 soundStopped = true;
+    //                 stopSound();
+    //                 stop(0);
+    //             }
+    //         };
+    //     };
+    // }
     
     function update() {
         handles.forEach(function(handle) {
@@ -82,20 +76,16 @@ export default function startScene(items, fadeInDuration, outside) {
         updateFade();
     }
     
-    function stop(fadeOutDuration) {
-        if ( stopTime ) {
-            return;
-        }
-        
-        var stopTime = outside.time();
+    const stop = once(fadeOutDuration => {
+        const stopTime = outside.time();
         updateFade = function updateFadeOut() {
-            var ratio = fadeRatio(stopTime, outside.time(), fadeOutDuration);
-            sceneHandle.fade.step(1 - ratio);
+            var ratio = 1 - fadeRatio(stopTime, outside.time(), fadeOutDuration);
+            sceneHandle.fade.step(ratio);
             handles.forEach(function(handle) {
                 if (handle.fade) handle.fade(ratio);
             });
             
-            if ( ratio === 1 ) {
+            if ( ratio === 0 ) {
                 end();
             }
         };
@@ -106,7 +96,7 @@ export default function startScene(items, fadeInDuration, outside) {
         }
         
         return end;
-    }
+    });
     
     function end() {
         if ( !hasEnded ) {
@@ -139,4 +129,18 @@ export default function startScene(items, fadeInDuration, outside) {
             return value;
         };
     }
+    
+    function once(callback) {
+        let called = false;
+        let result = null;
+        return function() {
+            if (!called) {
+                called = true;
+                result = callback.apply(undefined, arguments);
+            }
+            return result;
+        };
+    }
+    
+    return start(items, fadeInDuration, outside);
 };

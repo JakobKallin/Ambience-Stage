@@ -1,14 +1,18 @@
 export default function dom(container) {
+    let number = 0;
     return {
         start: {
             scene: function(update) {
                 const scene = document.createElement('div');
                 scene.className = 'scene';
                 container.appendChild(scene);
+                number += 1;
+                const sceneNumber = number;
                 let fading = false;
                 return {
                     fade: {
                         start: () => {
+                            console.log('starting fade of scene ' + sceneNumber);
                             fading = true;
                             requestAnimationFrame(updateIfFading);
                         },
@@ -17,6 +21,7 @@ export default function dom(container) {
                             console.log('fading opacity ' + opacity);
                         },
                         stop: () => {
+                            console.log('stopping fade of scene ' + sceneNumber);
                             fading = false;
                         }
                     },
@@ -47,10 +52,10 @@ export default function dom(container) {
                 }
                 
                 return {
-                    stop: function() {
-                    }
+                    stop: function() {}
                 };
             },
+            sound: () => function() {},
             track: function(url, update) {
                 var element = document.createElement('audio');
                 element.src = url;
