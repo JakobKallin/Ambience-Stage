@@ -2,58 +2,85 @@ import ambience from '../../source/scene.js';
 import Timer from '../timer.js';
 
 export default function() {
-    var assert = chai.assert;
-    var assertEqual = chai.assert.deepEqual;
-    var assertError = chai.assert.throws;
+    const assert = chai.assert;
+    const assertEqual = chai.assert.deepEqual;
+    const assertError = chai.assert.throws;
+    
+    let timer;
+    let advance;
+    let events;
+    let start;
+    const defaultFilter = e => !e.match(/(start|stop) (scene|sound)/);
+        
+    setup(() => {
+        timer = Timer();
+        advance = timer.advance;
+        events = [];
+        start = function(items, callbacks, fade) {
+            fade = fade || 0;
+            callbacks = callbacks || createCallbacks(defaultFilter);
+            return ambience(items, fade, callbacks);
+        };
+    });
     
     function nothing() {}
     
-    var timer;
-    var advance;
-    var events;
-    var start;
-    var defaultCallbacks;
-    
     function extend(object, newProperty, value) {
-        var newObject = {};
-        for ( var property in object ) {
+        const newObject = {};
+        for (const property in object) {
             newObject[property] = object[property];
         }
         newObject[newProperty] = value;
         return newObject;
     }
     
-    setup(function() {
-        timer = Timer();
-        advance = timer.advance;
-        events = [];
-        defaultCallbacks = {
+    function createCallbacks(filter, change) {
+        const callbacks = {
             start: {
-                scene: update => timer.track(update),
-                track: function(url) {
-                    events.push('start ' + url);
+                scene: update => {
+                    timer.track(update);
+                    log('start scene');
                     return {
-                        stop: function() {
-                            events.push('stop ' + url);
-                        },
-                        duration: function() {
-                            return 1;
-                        },
+                        stop: () => {
+                            log('stop scene');
+                        }
+                    };
+                },
+                sound: () => {
+                    log('start sound');
+                    return () => log('stop sound');
+                },
+                track: url => {
+                    log('start ' + url);
+                    return {
+                        stop: () => log('stop ' + url),
+                        duration: () => 1,
                         fade: nothing
                     };
-                }
+                },
+                image: () => nothing
             },
             time: timer.time
         };
-        start = function(items, callbacks, fade) {
-            fade = fade || 0;
-            callbacks = callbacks || defaultCallbacks;
-            return ambience(items, fade, callbacks);
-        };
-    });
+        
+        change = change || (x => x);
+        change(callbacks);
+        
+        return callbacks;
+        
+        function log(event) {
+            if (!filter || typeof filter === 'function' && filter(event) || event.match(filter)) {
+                events.push(event);
+            }
+        }
+    }
     
-    test('no tracks', function() {
-        assertError(function() {
+    function soundCallbacks() {
+        return createCallbacks(e => !e.match(/(start|stop) (scene)/));
+    }
+    
+    test('no tracks', () => {
+        assertError(() => {
             start([{
                 type: 'sound',
                 tracks: []
@@ -61,7 +88,7 @@ export default function() {
         });
     });
     
-    test('single track', function() {
+    test('single track', () => {
         start([{
             type: 'sound',
             tracks: ['test']
@@ -71,7 +98,7 @@ export default function() {
         assertEqual(events, ['start test']);
     });
     
-    test('single track, no loop', function() {
+    test('single track, no loop', () => {
         start([{
             type: 'sound',
             tracks: ['test'],
@@ -83,7 +110,7 @@ export default function() {
         assertEqual(events, ['start test', 'stop test']);
     });
     
-    test('single track, loop', function() {
+    test('single track, loop', () => {
         start([{
             type: 'sound',
             tracks: ['test'],
@@ -95,7 +122,7 @@ export default function() {
         assertEqual(events, ['start test', 'stop test', 'start test']);
     });
     
-    test('track stops even when ticked higher than duration', function() {
+    test('track stops even when ticked higher than duration', () => {
         start([{
             type: 'sound',
             tracks: ['one'],
@@ -108,30 +135,32 @@ export default function() {
     });
     
     test('track does not stop until duration is known', () => {
-        // Change the callbacks so that NaN is returned from the first and
-        // second call to `duration`.
-        const defaultStartTrack = defaultCallbacks.start.track;
-        defaultCallbacks.start.track = (url) => {
-            const handle = defaultStartTrack(url);
-            const originalDuration = handle.duration;
-            let called = 0;
-            handle.duration = () => {
-                called += 1;
-                if (called <= 2) {
-                    return NaN;
+        const callbacks = createCallbacks(defaultFilter, c => {
+            // Change the callbacks so that NaN is returned from the first and
+            // second call to `duration`.
+            const defaultStartTrack = c.start.track;
+            c.start.track = (url) => {
+                const handle = defaultStartTrack(url);
+                const originalDuration = handle.duration;
+                let called = 0;
+                handle.duration = () => {
+                    called += 1;
+                    if (called <= 2) {
+                        return NaN;
+                    }
+                    else {
+                        return originalDuration();
+                    }
                 }
-                else {
-                    return originalDuration();
-                }
-            }
-            return handle;
-        };
+                return handle;
+            };
+        });
         
         start([{
             type: 'sound',
             tracks: ['one'],
             loop: false
-        }]);
+        }], callbacks);
         advance(0);
         advance(1.1);
         assertEqual(events, ['start one']);
@@ -140,7 +169,7 @@ export default function() {
         assertEqual(events, ['start one', 'stop one']);
     });
     
-    test('two tracks, no loop', function() {
+    test('two tracks, no loop', () => {
         start([{
             type: 'sound',
             tracks: ['one', 'two'],
@@ -153,7 +182,7 @@ export default function() {
         assertEqual(events, ['start one', 'stop one', 'start two', 'stop two']);
     });
     
-    test('two tracks, loop', function() {
+    test('two tracks, loop', () => {
         start([{
             type: 'sound',
             tracks: ['one', 'two'],
@@ -175,7 +204,7 @@ export default function() {
         ]);
     });
     
-    test('three tracks, no loop', function() {
+    test('three tracks, no loop', () => {
         start([{
             type: 'sound',
             tracks: ['one', 'two', 'three'],
@@ -200,7 +229,7 @@ export default function() {
     // always played, second is scheduled right afterwards, but the third
     // one is scheduled later using a different method and thus fails",
     // so we try with three tracks to be on the safe side.
-    test('three tracks, loop', function() {
+    test('three tracks, loop', () => {
         start([{
             type: 'sound',
             tracks: ['one', 'two', 'three'],
@@ -228,7 +257,7 @@ export default function() {
         ]);
     });
     
-    test('single track, no loop, overlap', function() {
+    test('single track, no loop, overlap', () => {
         start([{
             type: 'sound',
             tracks: ['one'],
@@ -241,7 +270,7 @@ export default function() {
         assertEqual(events, ['start one']);
     });
     
-    test('single track, loop, overlap', function() {
+    test('single track, loop, overlap', () => {
         start([{
             type: 'sound',
             tracks: ['one'],
@@ -254,7 +283,7 @@ export default function() {
         assertEqual(events, ['start one', 'start one']);
     });
     
-    test('single overlap regardless of number of ticks', function() {
+    test('single overlap regardless of number of ticks', () => {
         start([{
             type: 'sound',
             tracks: ['one'],
@@ -269,7 +298,7 @@ export default function() {
         assertEqual(events, ['start one', 'start one']);
     });
     
-    test('overlapping track starts tracking time immediately', function() {
+    test('overlapping track starts tracking time immediately', () => {
         start([{
             type: 'sound',
             tracks: ['one', 'two', 'three'],
@@ -284,7 +313,7 @@ export default function() {
         assertEqual(events, ['start one', 'start two', 'stop one', 'start three']);
     });
     
-    test('overlapping track starts tracking time immediately, accounting for offset', function() {
+    test('overlapping track starts tracking time immediately, accounting for offset', () => {
         start([{
             type: 'sound',
             tracks: ['one', 'two', 'three'],
@@ -299,7 +328,7 @@ export default function() {
         assertEqual(events, ['start one', 'start two', 'stop one', 'start three']);
     });
     
-    test('single track, no loop, shuffle', function() {
+    test('single track, no loop, shuffle', () => {
         start([{
             type: 'sound',
             tracks: ['test'],
@@ -312,7 +341,7 @@ export default function() {
         assertEqual(events, ['start test', 'stop test']);
     });
     
-    test('single track, loop, shuffle', function() {
+    test('single track, loop, shuffle', () => {
         start([{
             type: 'sound',
             tracks: ['test'],
@@ -325,12 +354,10 @@ export default function() {
         assertEqual(events, ['start test', 'stop test', 'start test']);
     });
     
-    test('two tracks, no loop, shuffle', function() {
-        var callbacks = extend(
-            defaultCallbacks,
-            'shuffle',
-            constant(['two', 'one'])
-        );
+    test('two tracks, no loop, shuffle', () => {
+        const callbacks = createCallbacks(defaultFilter, c => {
+            c.shuffle = () => ['two', 'one'];
+        });
         start([{
             type: 'sound',
             tracks: ['one', 'two'],
@@ -343,12 +370,10 @@ export default function() {
         assertEqual(events, ['start two', 'stop two', 'start one']);
     });
     
-    test('two tracks, loop, shuffle', function() {
-        var callbacks = extend(
-            defaultCallbacks,
-            'shuffle',
-            constant(['two', 'one'])
-        );
+    test('two tracks, loop, shuffle', () => {
+        const callbacks = createCallbacks(defaultFilter, c => {
+            c.shuffle = () => ['two', 'one'];
+        });
         start([{
             type: 'sound',
             tracks: ['one', 'two'],
@@ -361,9 +386,9 @@ export default function() {
         assertEqual(events, ['start two', 'stop two', 'start one']);
     });
     
-    test('two tracks, loop, shuffle twice', function() {
-        var shuffleCount = 0;
-        var shuffle = function() {
+    test('two tracks, loop, shuffle twice', () => {
+        let shuffleCount = 0;
+        const shuffle = () => {
             shuffleCount += 1;
             if ( shuffleCount === 1 ) {
                 return ['two', 'one'];
@@ -375,7 +400,7 @@ export default function() {
                 throw new Error('Tracks shuffled too many times.');
             }
         };
-        var callbacks = extend(defaultCallbacks, 'shuffle', shuffle);
+        const callbacks = createCallbacks(defaultFilter, c => c.shuffle = shuffle);
         
         start([{
             type: 'sound',
@@ -399,7 +424,7 @@ export default function() {
         ]);
     });
     
-    test('multiple tracklists, different overlap', function() {
+    test('multiple tracklists, different overlap', () => {
         start([
             {
                 type: 'sound',
@@ -421,7 +446,7 @@ export default function() {
         assertEqual(events, ['start one', 'start two', 'start two', 'start one']);
     });
     
-    test('track plays during overlap', function() {
+    test('track plays during overlap', () => {
         start([{
             type: 'sound',
             tracks: ['one', 'two'],
@@ -434,7 +459,7 @@ export default function() {
         assertEqual(events, ['start one', 'start two']);
     });
     
-    test('track stops after overlap', function() {
+    test('track stops after overlap', () => {
         start([{
             type: 'sound',
             tracks: ['one', 'two'],
@@ -447,7 +472,7 @@ export default function() {
         assertEqual(events, ['start one', 'start two', 'stop one']);
     });
     
-    test('last track stops, no loop', function() {
+    test('last track stops, no loop', () => {
         start([{
             type: 'sound',
             tracks: ['one'],
@@ -459,7 +484,7 @@ export default function() {
         assertEqual(events, ['start one', 'stop one']);
     });
     
-    test('last track stops, loop', function() {
+    test('last track stops, loop', () => {
         start([{
             type: 'sound',
             tracks: ['one'],
@@ -471,111 +496,96 @@ export default function() {
         assertEqual(events, ['start one', 'stop one', 'start one']);
     });
     
-    test('sound starts', function() {
-        watchSoundEvents(defaultCallbacks);
+    test('sound starts', () => {
         start([{
             type: 'sound',
             tracks: ['one'],
             loop: false
-        }]);
+        }], soundCallbacks());
         
-        assertEqual(events, ['start', 'start one']);
+        assertEqual(events, ['start sound', 'start one']);
     });
     
-    test('non-looping sound stops', function() {
-        watchSoundEvents(defaultCallbacks);
+    test('non-looping sound stops', () => {
         start([{
             type: 'sound',
             tracks: ['one'],
             loop: false
-        }]);
+        }], soundCallbacks());
         advance(1);
         
-        assertEqual(events, ['start', 'start one', 'stop one', 'stop']);
+        assertEqual(events, ['start sound', 'start one', 'stop one', 'stop sound']);
     });
     
-    test('looping sound does not stop', function() {
-        watchSoundEvents(defaultCallbacks);
+    test('looping sound does not stop', () => {
         start([{
             type: 'sound',
             tracks: ['one'],
             loop: true
-        }]);
+        }], soundCallbacks());
         advance(1);
         
-        assertEqual(events, ['start', 'start one', 'stop one', 'start one']);
+        assertEqual(events, ['start sound', 'start one', 'stop one', 'start one']);
     });
     
-    test('non-looping sound stops, two tracks', function() {
-        watchSoundEvents(defaultCallbacks);
+    test('non-looping sound stops, two tracks', () => {
         start([{
             type: 'sound',
             tracks: ['one', 'two'],
             loop: false
-        }]);
+        }], soundCallbacks());
         advance(1);
         advance(1);
         
-        assertEqual(events, ['start', 'start one', 'stop one', 'start two', 'stop two', 'stop']);
+        assertEqual(events, ['start sound', 'start one', 'stop one', 'start two', 'stop two', 'stop sound']);
     });
     
     test('tracks stop after sound is stopped', () => {
-        watchSoundEvents(defaultCallbacks);
         const stop = start([{
             type: 'sound',
             tracks: ['one']
-        }]);
+        }], soundCallbacks());
         advance(0.5);
         stop(0);
         
-        assertEqual(events, ['start', 'start one', 'stop one', 'stop']);
+        assertEqual(events, ['start sound', 'start one', 'stop one', 'stop sound']);
     });
     
     test('tracks stop after sound is stopped during overlap', () => {
-        watchSoundEvents(defaultCallbacks);
         const stop = start([{
             type: 'sound',
             tracks: ['one', 'two'],
             overlap: 0.5
-        }]);
+        }], soundCallbacks());
         advance(0.75);
         stop(0);
         
-        assertEqual(events, ['start', 'start one', 'start two', 'stop one', 'stop two', 'stop']);
+        assertEqual(events, ['start sound', 'start one', 'start two', 'stop one', 'stop two', 'stop sound']);
     });
     
-    function watchSoundEvents(callbacks) {
-        callbacks.start.sound = function() {
-            events.push('start');
-            return function stop() {
-                events.push('stop');
-            };
-        };
-    }
-    
-    test('non-looping sound-only scene stops after last track', function() {
+    test('non-looping sound-only scene stops after last track', () => {
         start([{
             type: 'sound',
             tracks: ['one'],
             loop: false
-        }], sceneCallbacks());
+        }], createCallbacks(/scene|sound/));
         advance(1);
         
         assertEqual(events, ['start scene', 'start sound', 'stop sound', 'stop scene']);
     });
     
-    test('looping sound-only scene does not stop after last track', function() {
+    test('looping sound-only scene does not stop after last track', () => {
         start([{
             type: 'sound',
             tracks: ['one'],
             loop: true
-        }], sceneCallbacks());
+        }], createCallbacks(/scene|sound/));
         advance(1);
         
         assertEqual(events, ['start scene', 'start sound']);
     });
     
-    test('non-looping sound scene with other media does not stop after last track', function() {
+    test('non-looping sound scene with other media does not stop after last track', () => {
         start([
             {
                 type: 'sound',
@@ -583,7 +593,7 @@ export default function() {
                 loop: false
             },
             { type: 'image', url: 'image' }
-        ], sceneCallbacks());
+        ], createCallbacks(/scene|sound/));
         advance(1);
         
         assertEqual(events, ['start scene', 'start sound', 'stop sound']);
@@ -594,43 +604,12 @@ export default function() {
             type: 'sound',
             tracks: ['one'],
             loop: false
-        }], sceneCallbacks());
+        }], createCallbacks(/scene|sound/));
         stop(2);
         advance(1);
         
         assertEqual(events, ['start scene', 'start sound', 'stop sound', 'stop scene']);
     });
-    
-    function sceneCallbacks() {
-        return {
-            start: {
-                scene: update => {
-                    timer.track(update);
-                    events.push('start scene');
-                    return {
-                        stop: function() {
-                            events.push('stop scene');
-                        }
-                    };
-                },
-                sound: function() {
-                    events.push('start sound');
-                    return function() {
-                        events.push('stop sound');
-                    };
-                },
-                track: function(url) {
-                    return {
-                        stop: nothing,
-                        duration: constant(1),
-                        fade: nothing
-                    };
-                },
-                image: constant(nothing)
-            },
-            time: timer.time
-        };
-    }
     
     test('track fades in during scene fade-in', () => {
         start([{
@@ -669,7 +648,7 @@ export default function() {
                     timer.track(update);
                     events.push('start scene');
                     return {
-                        stop: function() {
+                        stop: () => {
                             events.push('stop scene');
                         }
                     };
@@ -682,18 +661,12 @@ export default function() {
                         fade: ratio => {
                             events.push('fade ' + url + ' ' + (ratio * 100) + '%');
                         },
-                        duration: constant(1)
+                        duration: () => 1
                     };
                 },
-                image: constant(nothing)
+                image: () => nothing
             },
             time: timer.time
-        };
-    }
-    
-    function constant(value) {
-        return function() {
-            return value;
         };
     }
 }

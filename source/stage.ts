@@ -2,7 +2,7 @@ import start from './scene';
 
 export default function stage(outside) {
     var abort = nothing;
-    var stop = function() {
+    var stop = function(fade) {
         return nothing;
     };
     
