@@ -7,22 +7,22 @@ declare var suite:any;
 declare var test:any;
 
 export default function() {
-    var assert = chai.assert;
-    var assertEqual = chai.assert.deepEqual;
-    var assertError = chai.assert.throws;
+    const assert = chai.assert;
+    const assertEqual = chai.assert.deepEqual;
+    const assertError = chai.assert.throws;
     
-    var events;
-    var start;
-    var timer;
-    var advance;
+    let events;
+    let start;
+    let timer;
+    let advance;
 
     setup(function() {
         timer = Timer();
         advance = timer.advance;
         events = [];
         
-        var callbacks = {
-            start: {
+        const callbacks = {
+            scene: update => ({
                 image: function(image, update) {
                     timer.track(update);
                     events.push('start ' + image.url);
@@ -35,7 +35,7 @@ export default function() {
                         }
                     };
                 }
-            },
+            }),
             time: timer.time
         };
         
@@ -45,28 +45,28 @@ export default function() {
         };
     });
 
-    test('start', function() {
+    test('start', () => {
         start([{ type: 'image', url: 'image' }]);
         
         assertEqual(events, ['start image']);
     });
 
-    test('stop', function() {
-        var stop = start([{ type: 'image', url: 'image' }]);
+    test('stop', () => {
+        const stop = start([{ type: 'image', url: 'image' }]);
         stop(0);
         
         assertEqual(events, ['start image', 'stop image']);
     });
 
-    test('fade in', function() {
-        var stop = start([{ type: 'image', url: 'image' }], 1000);
+    test('fade in', () => {
+        const stop = start([{ type: 'image', url: 'image' }], 1000);
         advance(500);
         
         assertEqual(events, ['start image', 'fade 50% image']);
     });
 
-    test('fade out', function() {
-        var stop = start([{ type: 'image', url: 'image' }]);
+    test('fade out', () => {
+        const stop = start([{ type: 'image', url: 'image' }]);
         stop(1000);
         advance(500);
         

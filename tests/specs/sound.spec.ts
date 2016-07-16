@@ -15,7 +15,7 @@ export default function() {
     let advance;
     let events;
     let start;
-    const defaultFilter = e => !e.match(/(start|stop) (scene|sound)/);
+    const defaultFilter = e => !e.match(/(fade|(start|stop) (scene|sound))/);
         
     setup(() => {
         timer = Timer();
@@ -27,6 +27,14 @@ export default function() {
             return ambience(items, fade, callbacks);
         };
     });
+    
+    function augment(original, augment) {
+        return function() {
+            const result = original.apply(undefined, arguments);
+            augment(result);
+            return result;
+        };
+    }
     
     function nothing() {}
     
@@ -41,29 +49,30 @@ export default function() {
     
     function createCallbacks(filter, change?) {
         const callbacks = {
-            start: {
-                scene: update => {
-                    timer.track(update);
-                    log('start scene');
-                    return {
-                        stop: () => {
-                            log('stop scene');
+            scene: update => {
+                timer.track(update);
+                log('start scene');
+                return {
+                    stop: () => {
+                        log('stop scene');
+                    },
+                    sound: () => {
+                        log('start sound');
+                        return {
+                            stop: () => log('stop sound'),
+                            track: url => {
+                                log('start ' + url);
+                                return {
+                                    stop: () => log('stop ' + url),
+                                    duration: () => 1,
+                                    fade: ratio => {
+                                        log('fade ' + url + ' ' + (ratio * 100) + '%');
+                                    }
+                                };
+                            }
                         }
-                    };
-                },
-                sound: () => {
-                    log('start sound');
-                    return () => log('stop sound');
-                },
-                track: url => {
-                    log('start ' + url);
-                    return {
-                        stop: () => log('stop ' + url),
-                        duration: () => 1,
-                        fade: nothing
-                    };
-                },
-                image: () => nothing
+                    }
+                };
             },
             time: timer.time,
             shuffle: x => x
@@ -82,7 +91,11 @@ export default function() {
     }
     
     function soundCallbacks() {
-        return createCallbacks(e => !e.match(/(start|stop) (scene)/));
+        return createCallbacks(e => !e.match(/(fade|(start|stop) (scene))/));
+    }
+    
+    function fadeCallbacks() {
+        return createCallbacks(e => !e.match(/(start|stop) sound/));
     }
     
     test('no tracks', () => {
@@ -144,22 +157,23 @@ export default function() {
         const callbacks = createCallbacks(defaultFilter, c => {
             // Change the callbacks so that NaN is returned from the first and
             // second call to `duration`.
-            const defaultStartTrack = c.start.track;
-            c.start.track = (url) => {
-                const handle = defaultStartTrack(url);
-                const originalDuration = handle.duration;
-                let called = 0;
-                handle.duration = () => {
-                    called += 1;
-                    if (called <= 2) {
-                        return NaN;
-                    }
-                    else {
-                        return originalDuration();
-                    }
-                }
-                return handle;
-            };
+            c.scene = augment(c.scene, sceneHandle => {
+                sceneHandle.sound = augment(sceneHandle.sound, soundHandle => {
+                    soundHandle.track = augment(soundHandle.track, trackHandle => {
+                        const originalDuration = trackHandle.duration;
+                        let called = 0;
+                        trackHandle.duration = () => {
+                            called += 1;
+                            if (called <= 2) {
+                                return NaN;
+                            }
+                            else {
+                                return originalDuration();
+                            }
+                        }
+                    });
+                });
+            });
         });
         
         start([{
@@ -645,34 +659,4 @@ export default function() {
         advance(0.5);
         assertEqual(events, ['start scene', 'start one', 'start two', 'fade one 50%', 'fade two 50%'])
     });
-    
-    
-    function fadeCallbacks() {
-        return {
-            start: {
-                scene: update => {
-                    timer.track(update);
-                    events.push('start scene');
-                    return {
-                        stop: () => {
-                            events.push('stop scene');
-                        }
-                    };
-                },
-                sound: () => nothing,
-                track: function(url) {
-                    events.push('start ' + url);
-                    return {
-                        stop: nothing,
-                        fade: ratio => {
-                            events.push('fade ' + url + ' ' + (ratio * 100) + '%');
-                        },
-                        duration: () => 1
-                    };
-                },
-                image: () => nothing
-            },
-            time: timer.time
-        };
-    }
 }

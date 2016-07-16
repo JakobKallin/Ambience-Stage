@@ -2,43 +2,59 @@ import startSound from './sound';
 
 export default function startScene(items, fadeInDuration, outside) {
     fadeInDuration = fadeInDuration || 0;
-    var startTime = outside.time();
-    var hasEnded = false;
-    var handles = [];
-    var sceneHandle;
+    const time = outside.time || (() => new Date());
+    const startTime = time();
+    let hasEnded = false;
+    let handles;
+    let sceneHandle;
     
-    var updateFade = function updateFadeIn() {
-        var ratio = fadeRatio(startTime, outside.time(), fadeInDuration);
-        sceneHandle.fade.step(ratio);
+    let updateFade = function updateFadeIn() {
+        const ratio = fadeRatio(startTime, time(), fadeInDuration);
+        sceneHandle.fade.in.step(ratio);
         handles.forEach(function(handle) {
             if (handle.fade) handle.fade(ratio);
         });
         
         if ( ratio === 1 ) {
-            sceneHandle.fade.stop();
+            sceneHandle.fade.in.stop();
             updateFade = nothing;
         }
     };
         
     function start(items, fadeInDuration, outside) {
-        sceneHandle = outside.start.scene ? outside.start.scene(update) : {};
-        sceneHandle = sceneHandle || {};
-        sceneHandle.stop = sceneHandle.stop || nothing;
-        sceneHandle.fade = sceneHandle.fade || {};
-        sceneHandle.fade.start = sceneHandle.fade.start || nothing;
-        sceneHandle.fade.step = sceneHandle.fade.step || nothing;
-        sceneHandle.fade.stop = sceneHandle.fade.stop || nothing;
-        
-        sceneHandle.fade.start();
+        sceneHandle = overlay(outside.scene(update), {
+            stop: nothing,
+            fade: {
+                in: {
+                    step: nothing,
+                    stop: nothing
+                },
+                out: {
+                    start: nothing,
+                    step: nothing
+                }
+            },
+            sound: () => nothing,
+            image: () => nothing
+        });
+        sceneHandle.fade.in.step = callableUntil(sceneHandle.fade.in.step, ratio => ratio === 1);
+        sceneHandle.fade.in.stop = once(sceneHandle.fade.in.stop);
+        sceneHandle.fade.out.step = callableUntil(sceneHandle.fade.out.step, ratio => ratio === 0);
         
         handles = items.map(function(item) {
             if ( item.type === 'sound' ) {
-                return startSound(item, outside, update, () => {
+                const callbacks = {
+                    time: time,
+                    shuffle: outside.shuffle,
+                    sound: sceneHandle.sound,
+                    track: sceneHandle.track
+                };
+                return startSound(item, callbacks, () => {
                     if (onlySound(items)) end();
                 });
             }
             else {
-                return outside.start[item.type](item, update);
+                return sceneHandle[item.type](item, update);
             }
         });
         
@@ -59,10 +75,12 @@ export default function startScene(items, fadeInDuration, outside) {
     }
     
     const stop = once(fadeOutDuration => {
-        const stopTime = outside.time();
+        const stopTime = time();
+        sceneHandle.fade.in.step(1);
+        sceneHandle.fade.in.stop();
         updateFade = function updateFadeOut() {
-            var ratio = 1 - fadeRatio(stopTime, outside.time(), fadeOutDuration);
-            sceneHandle.fade.step(ratio);
+            const ratio = 1 - fadeRatio(stopTime, time(), fadeOutDuration);
+            sceneHandle.fade.out.step(ratio);
             handles.forEach(function(handle) {
                 if (handle.fade) handle.fade(ratio);
             });
@@ -71,7 +89,7 @@ export default function startScene(items, fadeInDuration, outside) {
                 end();
             }
         };
-        sceneHandle.fade.start();
+        sceneHandle.fade.out.start();
         
         if ( fadeOutDuration === 0 ) {
             end();
@@ -84,33 +102,27 @@ export default function startScene(items, fadeInDuration, outside) {
         if ( !hasEnded ) {
             hasEnded = true;
             updateFade = nothing;
+            sceneHandle.fade.out.step(0);
             handles.forEach(function(handle) {
                 handle.stop();
             });
-            sceneHandle.fade.stop();
             sceneHandle.stop();
         }
     }
     
     function fadeRatio(startTime, currentTime, duration) {
-        var elapsed = currentTime - startTime;
+        const elapsed = currentTime - startTime;
         if ( duration === 0 ) {
             return 1;
         }
         else {
-            var ratio = elapsed / duration;
-            var boundedRatio = Math.min(Math.max(ratio, 0), 1);
+            const ratio = elapsed / duration;
+            const boundedRatio = Math.min(Math.max(ratio, 0), 1);
             return boundedRatio;
         }
     }
     
     function nothing() {}
-    
-    function constant(value) {
-        return function() {
-            return value;
-        };
-    }
     
     function once(callback) {
         let called = false;
@@ -122,6 +134,43 @@ export default function startScene(items, fadeInDuration, outside) {
             }
             return result;
         };
+    }
+    
+    function callableUntil(callback, predicate) {
+        let limitReached = false;
+        return function() {
+            const args = arguments;
+            if (!limitReached) {
+                callback.apply(undefined, args);
+            }
+            limitReached = predicate.apply(undefined, args);
+        };
+    }
+    
+    function overlay(extra, base) {
+        const result = copy(base);
+        for (var property in extra) {
+            if (property in result && typeof result[property] === 'object') {
+                result[property] = overlay(extra[property], result[property]);
+            }
+            else {
+                result[property] = extra[property];
+            }
+        }
+        return result;
+    }
+    
+    function copy(object) {
+        const result = {};
+        for (var property in object) {
+            if (typeof object[property] === 'object') {
+                result[property] = copy(object[property]);
+            }
+            else {
+                result[property] = object[property];
+            }
+        }
+        return result;
     }
     
     return start(items, fadeInDuration, outside);

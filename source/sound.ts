@@ -1,4 +1,4 @@
-export default function startSound(sound, outside, updateScene, abortSceneIfSoundOnly) {
+export default function startSound(sound, outside, abortSceneIfSoundOnly) {
     var loop = 'loop' in sound ? sound.loop : true;
     var shuffle = 'shuffle' in sound ? sound.shuffle : true;
     var overlap = sound.overlap || 0;
@@ -12,7 +12,7 @@ export default function startSound(sound, outside, updateScene, abortSceneIfSoun
         tracks = shuffleArray(tracks);
     }
     
-    const stopOutsideSound = outside.start.sound ? outside.start.sound() : nothing;
+    const soundHandle = outside.sound();
     const outsideTracks = [];
     var updateLatest = startTrack(0);
     
@@ -22,7 +22,7 @@ export default function startSound(sound, outside, updateScene, abortSceneIfSoun
     
     const stopSound = once(() => {
         outsideTracks.forEach(t => t.stop());
-        stopOutsideSound();
+        soundHandle.stop();
         abortSceneIfSoundOnly();
     });
     
@@ -34,7 +34,7 @@ export default function startSound(sound, outside, updateScene, abortSceneIfSoun
     
     function startTrack(index) {
         var startTime = outside.time();
-        const outsideTrack = outside.start.track(tracks[index], updateScene);
+        const outsideTrack = soundHandle.track(tracks[index]);
         outsideTrack.stop = once(outsideTrack.stop);
         outsideTracks.push(outsideTrack);
         var updateNext = nothing;

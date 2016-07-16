@@ -22,42 +22,59 @@ export default function() {
         events = [];
         var latestScene = -1;
         start = stage({
-            start: {
-                scene: function(update) {
-                    var scene = latestScene + 1;
-                    latestScene = scene;
-                    timer.track(update);
-                    events.push('start ' + scene);
-                    return {
-                        stop: function() {
-                            events.push('stop ' + scene);
-                        },
-                        fade: {
-                            start: () => events.push('start fade ' + scene),
+            scene: update => {
+                var scene = latestScene + 1;
+                latestScene = scene;
+                timer.track(update);
+                events.push('start ' + scene);
+                return {
+                    fade: {
+                        in: {
                             step: ratio => {
-                                events.push('fade ' + scene + ' ' + (ratio * 100) + '%');
+                                events.push('fade in ' + scene + ' ' + (ratio * 100) + '%');
                             },
-                            stop: () => events.push('stop fade ' + scene)
+                            stop: () => events.push('stop fade in ' + scene)
+                        },
+                        out: {
+                            start: () => events.push('start fade out ' + scene),
+                            step: ratio => {
+                                events.push('fade out ' + scene + ' ' + (ratio * 100) + '%');
+                            }
                         }
-                    };
-                },
-                track: () => ({
-                    duration: () => 1,
-                    fade: function() {},
-                    stop: function() {}
-                })
+                    },
+                    stop: function() {
+                        events.push('stop ' + scene);
+                    },
+                    track: () => ({
+                        duration: () => 1,
+                        fade: function() {},
+                        stop: function() {}
+                    })
+                };
             },
             time: timer.time,
             shuffle: x => x
         });
     });
     
+    function filter(events, f) {
+        return events.filter(e => e.match(f));
+    }
+    
     test('crossfade', function() {
         start([]);
         start([], 1000);
         advance(250);
         
-        assertEqual(events, ['start 0', 'start 1', 'fade 0 75%', 'fade 1 25%']);
+        assertEqual(events, [
+            'start 0',
+            'fade in 0 100%',
+            'stop fade in 0',
+            'start fade out 0',
+            'start 1',
+            'fade out 0 75%',
+            'fade in 1 25%'
+        ]);
     });
     
     test('crossfade twice', function() {
@@ -68,19 +85,18 @@ export default function() {
         
         assertEqual(events, [
             'start 0',
+            'fade in 0 100%',
+            'stop fade in 0',
+            'start fade out 0',
             'start 1',
+            'fade out 0 0%',
             'stop 0',
+            'fade in 1 100%',
+            'stop fade in 1',
+            'start fade out 1',
             'start 2',
-            'fade 1 75%',
-            'fade 2 25%'
+            'fade out 1 75%',
+            'fade in 2 25%'
         ]);
-    });
-    
-    test('sound-only', () => {
-        start([{ type: 'sound', tracks: ['one'], loop: false }], 0);
-        advance(0);
-        start([{ type: 'sound', tracks: ['two'], loop: false }], 0);
-        advance(0);
-        assertEqual(events, ['start 0', 'stop 0', 'start 1', 'stop 1', 'start 2', 'stop 2']);
     });
 };

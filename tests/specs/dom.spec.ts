@@ -7,10 +7,11 @@ declare var suite:any;
 declare var test:any;
 
 export default function() {
-    var assert = chai.assert;
-    var assertEqual = chai.assert.deepEqual;
-    var assertAbove = chai.assert.isAbove;
-    var assertBelow = chai.assert.isBelow;
+    const assert = chai.assert;
+    const assertEqual = chai.assert.deepEqual;
+    const assertAbove = chai.assert.isAbove;
+    const assertBelow = chai.assert.isBelow;
+    const nothing = () => {};
     
     let container;
     let dom;
@@ -20,157 +21,153 @@ export default function() {
         dom = createDom(container);
     });
     
+    function scenes() {
+        return <HTMLElement[]> Array.from(container.querySelectorAll('.scene'));
+    }
+    
+    function images() {
+        return <HTMLImageElement[]> Array.from(container.querySelectorAll('.image'));
+    }
+    
+    function tracks() {
+        return <HTMLAudioElement[]> Array.from(container.querySelectorAll('.track'));
+    }
+    
     suite('scene', function() {
         test('fade transparent', function() {
-            var handle = dom.start.scene();
-            handle.fade.step(0);
+            const handle = dom.scene(nothing);
+            handle.fade.in.step(0);
             
-            assertEqual(parseFloat(container.querySelector('.scene').style.opacity), 0);
+            assertEqual(parseFloat(scenes()[0].style.opacity), 0);
         });
         
         test('fade semi-transparent', function() {
-            var handle = dom.start.scene();
-            handle.fade.step(0.5);
+            const handle = dom.scene(nothing);
+            handle.fade.in.step(0.5);
             
-            assertEqual(parseFloat(container.querySelector('.scene').style.opacity), 0.5);
+            assertEqual(parseFloat(scenes()[0].style.opacity), 0.5);
         });
         
         test('fade opaque', function() {
-            var handle = dom.start.scene();
-            handle.fade.step(1);
+            const handle = dom.scene(nothing);
+            handle.fade.in.step(1);
             
             // We don't want to set opacity to exactly one because that might 
             // change the rendering method for text and introduce a noticeable 
             // "jump" visually.
-            var opacity = parseFloat(container.querySelector('.scene').style.opacity);
+            const opacity = parseFloat(scenes()[0].style.opacity);
             assertAbove(opacity, 0.99);
             assertBelow(opacity, 1);
         });
     });
     
     suite('image', function() {
-        // Remove the "url('...')" part from CSS values because we cannot 
-        // predict whether they will have quotes or not, and of what kind.
-        function withoutUrl(value) {
-            return value.replace(/^url\(('|")?/g, '').replace(/('|")?\)$/g, '');
-        }
-        
-        // Use absolute URLs because browsers seem to treat relative URLs in 
-        // different ways, sometimes converting to absolute and sometimes not.
-        function url(path) {
-            return location.href + path;
-        }
-        
         test('start', function() {
-            dom.start.image({ url: url('transparent-10.png') });
+            const handle = dom.scene(nothing);
+            handle.image({ url: 'transparent-10.png' });
             
-            assertEqual(container.children.length, 1);
-            assertEqual(
-                withoutUrl(container.children[0].style.backgroundImage),
-                url('transparent-10.png')
-            );
+            assertEqual(images().length, 1);
+            assertEqual(images()[0].getAttribute('src'), 'transparent-10.png');
         });
         
         test('stop', function() {
-            var handle = dom.start.image({ url: url('transparent-10.png') });
-            handle.stop();
+            const sceneHandle = dom.scene(nothing);
+            const imageHandle = sceneHandle.image({ url: 'transparent-10.png' });
+            imageHandle.stop();
             
-            assertEqual(container.children.length, 0);
+            assertEqual(images().length, 0);
         });
         
         test('stop one of many', function() {
-            var first = dom.start.image({ url: url('transparent-10.png#1') });
-            var second = dom.start.image({ url: url('transparent-10.png#2') });
-            var third = dom.start.image({ url: url('transparent-10.png#3') });
+            const sceneHandle = dom.scene(nothing);
+            const first = sceneHandle.image({ url: 'transparent-10.png#1' });
+            const second = sceneHandle.image({ url: 'transparent-10.png#2' });
+            const third = sceneHandle.image({ url: 'transparent-10.png#3' });
             second.stop();
             
-            assertEqual(container.children.length, 2);
-            assertEqual(
-                withoutUrl(container.children[0].style.backgroundImage),
-                url('transparent-10.png#1')
-            );
-            assertEqual(
-                withoutUrl(container.children[1].style.backgroundImage),
-                url('transparent-10.png#3')
-            );
+            assertEqual(images().length, 2);
+            assertEqual(images()[0].getAttribute('src'), 'transparent-10.png#1');
+            assertEqual(images()[1].getAttribute('src'), 'transparent-10.png#3');
         });
         
         test('style', function() {
-            dom.start.image({
-                url: url('transparent-10.png'),
+            const handle = dom.scene(nothing);
+            handle.image({
+                url: 'transparent-10.png',
                 style: {
-                    backgroundSize: 'cover'
+                    objectFit: 'cover'
                 }
             });
             
-            assertEqual(container.children[0].style.backgroundSize, 'cover');
+            assertEqual(images()[0].style['objectFit'], 'cover');
         });
     });
     
     suite('track', function() {
         test('start', function() {
-            dom.start.track('silence-1.ogg');
-            var element = container.children[0];
+            const handle = dom.scene(nothing).sound();
+            handle.track('silence-1.ogg');
+            const element = tracks()[0];
             
-            assertEqual(container.children.length, 1);
+            assertEqual(tracks().length, 1);
             assertEqual(element.getAttribute('src'), 'silence-1.ogg');
             assertEqual(element.paused, false);
         });
         
         test('stop', function() {
-            var handle = dom.start.track('silence-1.ogg');
-            var element = container.children[0];
-            handle.stop();
+            const soundHandle = dom.scene(nothing).sound();
+            const trackHandle = soundHandle.track('silence-1.ogg');
+            const element = tracks()[0];
+            trackHandle.stop();
             
-            assertEqual(container.children.length, 0);
+            assertEqual(tracks().length, 0);
             assertEqual(element.paused, true);
         });
         
         test('stop one of many', function() {
-            var first = dom.start.track('silence-1.ogg#1');
-            var second = dom.start.track('silence-1.ogg#2');
-            var third = dom.start.track('silence-1.ogg#3');
-            var element = container.children[1];
+            const soundHandle = dom.scene(nothing).sound();
+            const first = soundHandle.track('silence-1.ogg#1');
+            const second = soundHandle.track('silence-1.ogg#2');
+            const third = soundHandle.track('silence-1.ogg#3');
+            const element = tracks()[1];
             second.stop();
             
-            assertEqual(container.children.length, 2);
-            assertEqual(
-                container.children[0].getAttribute('src'),
-                'silence-1.ogg#1'
-            );
-            assertEqual(
-                container.children[1].getAttribute('src'),
-                'silence-1.ogg#3'
-            );
+            assertEqual(tracks().length, 2);
+            assertEqual(tracks()[0].getAttribute('src'), 'silence-1.ogg#1');
+            assertEqual(tracks()[1].getAttribute('src'), 'silence-1.ogg#3');
             assertEqual(element.paused, true);
         });
         
         test('fade transparent', function() {
-            var handle = dom.start.track('silence-1.ogg');
-            handle.fade.step(0);
+            const soundHandle = dom.scene(nothing).sound();
+            const trackHandle = soundHandle.track('silence-1.ogg');
+            trackHandle.fade(0);
             
-            assertEqual(container.children[0].volume, 0);
+            assertEqual(tracks()[0].volume, 0);
         });
         
         test('fade semi-transparent', function() {
-            var handle = dom.start.track('silence-1.ogg');
-            handle.fade.step(0.5);
+            const soundHandle = dom.scene(nothing).sound();
+            const trackHandle = soundHandle.track('silence-1.ogg');
+            trackHandle.fade(0.5);
             
-            assertEqual(container.children[0].volume, 0.5);
+            assertEqual(tracks()[0].volume, 0.5);
         });
         
         test('fade opaque', function() {
-            var handle = dom.start.track('silence-1.ogg');
-            handle.fade.step(1);
+            const soundHandle = dom.scene(nothing).sound();
+            const trackHandle = soundHandle.track('silence-1.ogg');
+            trackHandle.fade(1);
             
-            assertEqual(container.children[0].volume, 1);
+            assertEqual(tracks()[0].volume, 1);
         });
         
         test('update', function() {
-            var updates = 0;
-            var handle = dom.start.track('silence-1.ogg', function() {
-                updates += 1;
-            });
+            let updates = 0;
+            const sceneHandle = dom.scene(() => updates += 1);
+            sceneHandle.fade.in.stop();
+            const soundHandle = sceneHandle.sound();
+            soundHandle.track('silence-1.ogg');
             
             return new Promise(function(resolve, reject) {
                 setTimeout(function() {
@@ -188,30 +185,32 @@ export default function() {
         // file ends, so this should not require a special case in the 
         // implementation.
         test('update on end', function() {
-            var latestUpdate;
-            var handle = dom.start.track('silence-1.ogg', function() {
-                console.log(element.currentTime);
-                latestUpdate = element.currentTime;
+            let latestUpdate;
+            const sceneHandle = dom.scene(() => {
+                latestUpdate = tracks()[0].currentTime;
             });
-            var element = container.children[0];
+            sceneHandle.fade.in.stop();
+            const soundHandle = sceneHandle.sound();
+            soundHandle.track('silence-1.ogg');
             
             return new Promise(function(resolve, reject) {
                 setTimeout(function() {
-                    assertEqual(latestUpdate, element.duration);
+                    assertEqual(latestUpdate, tracks()[0].duration);
                     resolve();
                 }, 1500);
             });
         });
         
         test('duration', () => {
-            const handle = dom.start.track('silence-1.ogg', function() {});
+            const soundHandle = dom.scene(nothing).sound();
+            const trackHandle = soundHandle.track('silence-1.ogg');
             return new Promise((resolve, reject) => {
                 setTimeout(() => {
-                    const duration = handle.duration();
+                    const duration = trackHandle.duration();
                     // Allow for some leeway in case the browser does not
                     // consider the file *exactly* one second long.
-                    assertAbove(duration, 0.9);
-                    assertBelow(duration, 1.1);
+                    assertAbove(duration, 900);
+                    assertBelow(duration, 1100);
                     resolve();
                 }, 1500);
             });
@@ -228,12 +227,12 @@ export default function() {
             
             return new Promise((resolve, reject) => {
                 setTimeout(() => {
-                    assertAbove(container.querySelector('.scene').style.opacity, 0.99);
-                    assert(container.querySelector('.image').style.backgroundImage.includes('transparent-10.png'));
-                    assertEqual(container.querySelector('.track').volume, 1);
-                    assert(!container.querySelector('.track').paused);
+                    assertAbove(scenes()[0].style.opacity, 0.99);
+                    assertEqual(images()[0].getAttribute('src'), 'transparent-10.png');
+                    assertEqual(tracks()[0].volume, 1);
+                    assert(!tracks()[0].paused);
                     resolve();
-                }, 0);
+                }, 100);
             });
         });
         
@@ -252,26 +251,23 @@ export default function() {
                     ], 500);
                     
                     setTimeout(() => {
-                        const scenes = container.querySelectorAll('.scene');
-                        const tracks = container.querySelectorAll('.track');
-                        assertAbove(scenes[0].style.opacity, 0.45);
-                        assertBelow(scenes[0].style.opacity, 0.55);
-                        assertAbove(scenes[1].style.opacity, 0.45);
-                        assertBelow(scenes[1].style.opacity, 0.55);
-                        assertAbove(tracks[0].volume, 0.45);
-                        assertBelow(tracks[0].volume, 0.55);
-                        assertAbove(tracks[1].volume, 0.45);
-                        assertBelow(tracks[1].volume, 0.55);
-                        assert(!tracks[0].paused);
-                        assert(!tracks[1].paused);
+                        assertAbove(scenes()[0].style.opacity, 0.45);
+                        assertBelow(scenes()[0].style.opacity, 0.55);
+                        assertAbove(scenes()[1].style.opacity, 0.45);
+                        assertBelow(scenes()[1].style.opacity, 0.55);
+                        assertAbove(tracks()[0].volume, 0.45);
+                        assertBelow(tracks()[0].volume, 0.55);
+                        assertAbove(tracks()[1].volume, 0.45);
+                        assertBelow(tracks()[1].volume, 0.55);
+                        assert(!tracks()[0].paused);
+                        assert(!tracks()[1].paused);
                     }, 250);
                     
                     setTimeout(() => {
-                        const track = container.querySelector('.track');
-                        assertEqual(container.querySelectorAll('.scene').length, 1);
-                        assertAbove(container.querySelector('.scene').style.opacity, 0.99);
-                        assertEqual(track.volume, 1);
-                        assert(!track.paused);
+                        assertEqual(scenes().length, 1);
+                        assertAbove(scenes()[0].style.opacity, 0.99);
+                        assertEqual(tracks()[0].volume, 1);
+                        assert(!tracks()[0].paused);
                         resolve();
                     }, 750);
                 }, 750);

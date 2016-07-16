@@ -1,10 +1,8 @@
 import start from './scene';
 
 export default function stage(outside) {
-    var abort = nothing;
-    var stop = function(fade) {
-        return nothing;
-    };
+    let abort = nothing;
+    let stop = fade => nothing;
     
     return function(items, fadeInDuration?) {
         abort();
