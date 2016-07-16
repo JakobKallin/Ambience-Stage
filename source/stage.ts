@@ -6,7 +6,7 @@ export default function stage(outside) {
         return nothing;
     };
     
-    return function(items, fadeInDuration) {
+    return function(items, fadeInDuration?) {
         abort();
         abort = stop(fadeInDuration);
         stop = start(items, fadeInDuration, outside);

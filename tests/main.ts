@@ -4,6 +4,12 @@ import sound from './specs/sound.spec';
 import stage from './specs/stage.spec';
 import dom from './specs/dom.spec';
 
+declare var mocha:any;
+declare var chai:any;
+declare var setup:any;
+declare var suite:any;
+declare var test:any;
+
 chai.config.truncateThreshold = 0;
 
 suite('Ambience', () => {

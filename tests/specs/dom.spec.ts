@@ -1,5 +1,10 @@
-import createDom from '../../source/dom.js'
-import createStage from '../../source/stage.js'
+import createDom from '../../source/dom';
+import createStage from '../../source/stage';
+
+declare var chai:any;
+declare var setup:any;
+declare var suite:any;
+declare var test:any;
 
 export default function() {
     var assert = chai.assert;

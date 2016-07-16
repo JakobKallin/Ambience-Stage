@@ -1,5 +1,10 @@
-import ambience from '../../source/scene.js';
-import Timer from '../timer.js';
+import ambience from '../../source/scene';
+import Timer from '../timer';
+
+declare var chai:any;
+declare var setup:any;
+declare var suite:any;
+declare var test:any;
 
 export default function() {
     const assert = chai.assert;
@@ -34,7 +39,7 @@ export default function() {
         return newObject;
     }
     
-    function createCallbacks(filter, change) {
+    function createCallbacks(filter, change?) {
         const callbacks = {
             start: {
                 scene: update => {
@@ -60,7 +65,8 @@ export default function() {
                 },
                 image: () => nothing
             },
-            time: timer.time
+            time: timer.time,
+            shuffle: x => x
         };
         
         change = change || (x => x);

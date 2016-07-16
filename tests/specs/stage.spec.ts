@@ -1,5 +1,10 @@
-import stage from '../../source/stage.js';
-import Timer from '../timer.js';
+import stage from '../../source/stage';
+import Timer from '../timer';
+
+declare var chai:any;
+declare var setup:any;
+declare var suite:any;
+declare var test:any;
 
 export default function() {
     var assert = chai.assert;
@@ -42,7 +47,8 @@ export default function() {
                     stop: function() {}
                 })
             },
-            time: timer.time
+            time: timer.time,
+            shuffle: x => x
         });
     });
     

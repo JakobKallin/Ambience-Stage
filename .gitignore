@@ -1,1 +1,4 @@
 node_modules
+source/*.js
+tests/specs/*.js
+tests/*.js

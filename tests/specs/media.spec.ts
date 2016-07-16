@@ -1,5 +1,10 @@
-import ambience from '../../source/scene.js';
-import Timer from '../timer.js';
+import ambience from '../../source/scene';
+import Timer from '../timer';
+
+declare var chai:any;
+declare var setup:any;
+declare var suite:any;
+declare var test:any;
 
 export default function() {
     var assert = chai.assert;
