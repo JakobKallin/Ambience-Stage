@@ -1,4 +1,4 @@
-import start from './scene.js';
+import start from './scene';
 
 export default function stage(outside) {
     var abort = nothing;

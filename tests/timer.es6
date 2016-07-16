@@ -1,19 +1,13 @@
 export default function() {
-    var time = 0;
-    var updates = [];
+    let time = 0;
+    const updates = [];
     
     return {
-        time: function() {
-            return time;
-        },
-        track: function(callback) {
-            updates.push(callback);
-        },
-        advance: function(amount) {
+        time: () => time,
+        track: callback => updates.push(callback),
+        advance: amount => {
             time += amount;
-            updates.forEach(function(update) {
-                update();
-            });
+            updates.forEach(update => update());
         }
     };
 };

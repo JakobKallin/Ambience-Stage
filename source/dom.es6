@@ -1,27 +1,21 @@
 export default function dom(container) {
-    let number = 0;
     return {
         start: {
             scene: function(update) {
                 const scene = document.createElement('div');
                 scene.className = 'scene';
                 container.appendChild(scene);
-                number += 1;
-                const sceneNumber = number;
                 let fading = false;
                 return {
                     fade: {
                         start: () => {
-                            console.log('starting fade of scene ' + sceneNumber);
                             fading = true;
                             requestAnimationFrame(updateIfFading);
                         },
                         step: opacity => {
-                            scene.style.opacity = Math.min(opacity, 0.999);
-                            console.log('fading opacity ' + opacity);
+                            scene.style.opacity = String(Math.min(opacity, 0.999));
                         },
                         stop: () => {
-                            console.log('stopping fade of scene ' + sceneNumber);
                             fading = false;
                         }
                     },
