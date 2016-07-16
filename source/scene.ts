@@ -49,24 +49,6 @@ export default function startScene(items, fadeInDuration, outside) {
         return items.every(i => i.type === 'sound');
     }
     
-    // function stopSceneAfterwards(startSound) {
-    //     var startSound = startSound || constant(nothing);
-    //     return function() {
-    //         var stopSound = startSound();
-    //         let soundStopped = false;
-    //         return function() {
-    //             // Once `stop` is called below, all of the stop handles will be
-    //             // called in turn, which includes this very function. We thus
-    //             // prevent it from being called twice.
-    //             if (!soundStopped) {
-    //                 soundStopped = true;
-    //                 stopSound();
-    //                 stop(0);
-    //             }
-    //         };
-    //     };
-    // }
-    
     function update() {
         handles.forEach(function(handle) {
             if ( handle.update ) {
