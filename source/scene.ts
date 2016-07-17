@@ -2,20 +2,20 @@ import startSound from './sound';
 
 export default function startScene(items, fadeInDuration, outside) {
     fadeInDuration = fadeInDuration || 0;
+    let fadeOutDuration;
     const time = outside.time || (() => new Date());
     const startTime = time();
+    let stopTime = null;
+    let volume = 1;
     let hasEnded = false;
     let handles;
     let sceneHandle;
     
     let updateFade = function updateFadeIn() {
-        const ratio = fadeRatio(startTime, time(), fadeInDuration);
-        sceneHandle.fade.in.step(ratio);
-        handles.forEach(function(handle) {
-            if (handle.fade) handle.fade(ratio);
-        });
+        sceneHandle.fade.in.step(opacity());
+        updateMediaHandles();
         
-        if ( ratio === 1 ) {
+        if (opacity() === 1) {
             sceneHandle.fade.in.stop();
             updateFade = nothing;
         }
@@ -42,19 +42,25 @@ export default function startScene(items, fadeInDuration, outside) {
         sceneHandle.fade.out.step = callableUntil(sceneHandle.fade.out.step, ratio => ratio === 0);
         
         handles = items.map(function(item) {
-            if ( item.type === 'sound' ) {
+            if (item.type === 'sound') {
                 const callbacks = {
                     time: time,
                     shuffle: outside.shuffle,
                     sound: sceneHandle.sound,
                     track: sceneHandle.track
                 };
-                return startSound(item, callbacks, () => {
-                    if (onlySound(items)) end();
-                });
+                return {
+                    type: 'sound',
+                    callback: startSound(item, callbacks, () => {
+                        if (onlySound(items)) end();
+                    })
+                };
             }
             else {
-                return sceneHandle[item.type](item, update);
+                return {
+                    type: item.type,
+                    callback: sceneHandle[item.type](item, update)
+                };
             }
         });
         
@@ -67,44 +73,59 @@ export default function startScene(items, fadeInDuration, outside) {
     
     function update() {
         handles.forEach(function(handle) {
-            if ( handle.update ) {
-                handle.update();
+            if (handle.callback.update) {
+                handle.callback.update();
             }
         });
         updateFade();
     }
     
-    const stop = once(fadeOutDuration => {
-        const stopTime = time();
+    function updateMediaHandles() {
+        handles.forEach(function(handle) {
+            if (handle.callback.fade) {
+                handle.type === 'sound'
+                    ? handle.callback.fade(opacity() * volume)
+                    : handle.callback.fade(opacity());
+            }
+        });
+    }
+    
+    const stop = once(fadeDuration => {
+        fadeOutDuration = fadeDuration;
+        stopTime = time();
         sceneHandle.fade.in.step(1);
         sceneHandle.fade.in.stop();
         updateFade = function updateFadeOut() {
-            const ratio = 1 - fadeRatio(stopTime, time(), fadeOutDuration);
-            sceneHandle.fade.out.step(ratio);
-            handles.forEach(function(handle) {
-                if (handle.fade) handle.fade(ratio);
-            });
+            sceneHandle.fade.out.step(opacity());
+            updateMediaHandles();
             
-            if ( ratio === 0 ) {
+            if (opacity() === 0) {
                 end();
             }
         };
         sceneHandle.fade.out.start();
         
-        if ( fadeOutDuration === 0 ) {
+        if (fadeOutDuration === 0) {
             end();
         }
         
         return end;
     });
     
+    stop['volume'] = newVolume => {
+        volume = newVolume;
+        handles.forEach(handle => {
+            if (handle.type === 'sound') handle.callback.fade(opacity() * volume);
+        });
+    };
+    
     function end() {
-        if ( !hasEnded ) {
+        if (!hasEnded) {
             hasEnded = true;
             updateFade = nothing;
             sceneHandle.fade.out.step(0);
             handles.forEach(function(handle) {
-                handle.stop();
+                handle.callback.stop();
             });
             sceneHandle.stop();
         }
@@ -112,7 +133,7 @@ export default function startScene(items, fadeInDuration, outside) {
     
     function fadeRatio(startTime, currentTime, duration) {
         const elapsed = currentTime - startTime;
-        if ( duration === 0 ) {
+        if (duration === 0) {
             return 1;
         }
         else {
@@ -120,6 +141,12 @@ export default function startScene(items, fadeInDuration, outside) {
             const boundedRatio = Math.min(Math.max(ratio, 0), 1);
             return boundedRatio;
         }
+    }
+    
+    function opacity() {
+        return stopTime === null
+            ? fadeRatio(startTime, time(), fadeInDuration)
+            : 1 - fadeRatio(stopTime, time(), fadeOutDuration);
     }
     
     function nothing() {}

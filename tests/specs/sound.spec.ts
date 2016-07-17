@@ -170,7 +170,7 @@ export default function() {
                             else {
                                 return originalDuration();
                             }
-                        }
+                        };
                     });
                 });
             });
@@ -658,5 +658,39 @@ export default function() {
         }], fadeCallbacks(), 1);
         advance(0.5);
         assertEqual(events, ['start scene', 'start one', 'start two', 'fade one 50%', 'fade two 50%'])
+    });
+    
+    function volumeCallbacks() {
+        return createCallbacks(/fade/);
+    }
+    
+    test('volume change', () => {
+        const stop = start([{
+            type: 'sound',
+            tracks: ['one']
+        }], volumeCallbacks());
+        stop.volume(0.5);
+        assertEqual(events, ['fade one 50%']);
+    });
+    
+    test('volume change during overlap', () => {
+        const stop = start([{
+            type: 'sound',
+            tracks: ['one', 'two'],
+            overlap: 0.8
+        }], volumeCallbacks());
+        advance(0.5);
+        stop.volume(0.5);
+        assertEqual(events, ['fade one 100%', 'fade two 100%', 'fade one 50%', 'fade two 50%']);
+    });
+    
+    test('volume change during fade', () => {
+        const stop = start([{
+            type: 'sound',
+            tracks: ['one'],
+        }], volumeCallbacks(), 1);
+        advance(0.5);
+        stop.volume(0.5);
+        assertEqual(events, ['fade one 50%', 'fade one 25%']);
     });
 }
