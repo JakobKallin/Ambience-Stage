@@ -15,25 +15,38 @@ export default function() {
     let start;
     let timer;
     let advance;
+    
+    function nothing() {}
 
-    setup(function() {
+    setup(() => {
         timer = Timer();
         advance = timer.advance;
         events = [];
         
         const callbacks = {
             scene: update => ({
-                image: function(image, update) {
+                stop: nothing,
+                image: (image, update) => {
                     timer.track(update);
                     events.push('start ' + image.url);
                     return {
-                        stop: function() {
+                        stop: () => {
                             events.push('stop ' + image.url);
                         },
-                        fade: function(ratio) {
+                        fade: ratio => {
                             events.push('fade ' + (ratio * 100) + '% ' + image.url);
                         }
                     };
+                },
+                fade: {
+                    in: {
+                        step: nothing,
+                        stop: nothing
+                    },
+                    out: {
+                        start: nothing,
+                        step: nothing
+                    }
                 }
             }),
             time: timer.time
@@ -52,24 +65,24 @@ export default function() {
     });
 
     test('stop', () => {
-        const stop = start([{ type: 'image', url: 'image' }]);
-        stop(0);
+        const scene = start([{ type: 'image', url: 'image' }]);
+        scene.stop(0);
         
-        assertEqual(events, ['start image', 'stop image']);
+        assertEqual(events, ['start image', 'fade 0% image', 'stop image']);
     });
 
     test('fade in', () => {
-        const stop = start([{ type: 'image', url: 'image' }], 1000);
+        const scene = start([{ type: 'image', url: 'image' }], 1000);
         advance(500);
         
         assertEqual(events, ['start image', 'fade 50% image']);
     });
 
     test('fade out', () => {
-        const stop = start([{ type: 'image', url: 'image' }]);
-        stop(1000);
+        const scene = start([{ type: 'image', url: 'image' }]);
+        scene.stop(1000);
         advance(500);
         
-        assertEqual(events, ['start image', 'fade 50% image']);
+        assertEqual(events, ['start image', 'fade 100% image', 'fade 50% image']);
     });
 };

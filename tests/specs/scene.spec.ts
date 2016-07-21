@@ -50,8 +50,7 @@ export default function() {
     let start;
 
     setup(function() {
-        start = function(items, fade) {
-            fade = fade || 0;
+        start = function(items, fade=0) {
             return ambience(items, fade, callbacks);
         };
     });
@@ -63,31 +62,31 @@ export default function() {
     });
 
     test('stop scene', function() {
-        const stop = start([]);
-        stop(0);
+        const scene = start([]);
+        scene.stop(0);
         
         assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 0%', 'stop']);
     });
 
     test('stop scene twice', function() {
-        const stop = start([]);
-        stop(0);
-        stop(0);
+        const scene = start([]);
+        scene.stop(0);
+        scene.stop(0);
         
         assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 0%', 'stop']);
     });
 
     test('abort scene without fading', function() {
-        const stop = start([]);
-        const abort = stop(0);
+        const scene = start([]);
+        const abort = scene.stop(0);
         abort();
         
         assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 0%', 'stop']);
     });
 
     test('abort scene without fading twice', function() {
-        const stop = start([]);
-        const abort = stop(0);
+        const scene = start([]);
+        const abort = scene.stop(0);
         abort();
         abort();
         
@@ -95,47 +94,47 @@ export default function() {
     });
 
     test('abort scene with fading, before', function() {
-        const stop = start([]);
-        const abort = stop(1000);
-        abort();
-        
-        assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 0%', 'stop']);
-    });
-
-    test('abort scene with fading, beginning', function() {
-        const stop = start([]);
-        const abort = stop(1000);
-        advance(0);
+        const scene = start([]);
+        const abort = scene.stop(1000);
         abort();
         
         assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 100%', 'fade out 0%', 'stop']);
     });
 
+    test('abort scene with fading, beginning', function() {
+        const scene = start([]);
+        const abort = scene.stop(1000);
+        advance(0);
+        abort();
+        
+        assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 100%', 'fade out 100%', 'fade out 0%', 'stop']);
+    });
+
     test('abort scene with fading, middle', function() {
-        const stop = start([]);
-        const abort = stop(1000);
+        const scene = start([]);
+        const abort = scene.stop(1000);
         advance(500);
         abort();
         
-        assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 50%', 'fade out 0%', 'stop']);
+        assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 100%', 'fade out 50%', 'fade out 0%', 'stop']);
     });
 
     test('abort scene with fading, end', function() {
-        const stop = start([]);
-        const abort = stop(1000);
+        const scene = start([]);
+        const abort = scene.stop(1000);
         advance(1000);
         abort();
         
-        assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 0%', 'stop']);
+        assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 100%', 'fade out 0%', 'stop']);
     });
 
     test('abort scene with fading, after', function() {
-        const stop = start([]);
-        const abort = stop(1000);
+        const scene = start([]);
+        const abort = scene.stop(1000);
         advance(1500);
         abort();
         
-        assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 0%', 'stop']);
+        assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 100%', 'fade out 0%', 'stop']);
     });
 
     test('fade in, before', function() {
@@ -173,69 +172,69 @@ export default function() {
     });
 
     test('fade out, before', function() {
-        const stop = start([]);
-        stop(1000);
-        
-        assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out']);
-    });
-
-    test('fade out, beginning', function() {
-        const stop = start([]);
-        stop(1000);
-        advance(0);
+        const scene = start([]);
+        scene.stop(1000);
         
         assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 100%']);
     });
 
+    test('fade out, beginning', function() {
+        const scene = start([]);
+        scene.stop(1000);
+        advance(0);
+        
+        assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 100%', 'fade out 100%']);
+    });
+
     test('fade out, middle', function() {
-        const stop = start([]);
-        stop(1000);
+        const scene = start([]);
+        scene.stop(1000);
         advance(500);
         
-        assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 50%']);
+        assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 100%', 'fade out 50%']);
     });
 
     test('fade out, end', function() {
-        const stop = start([]);
-        stop(1000);
+        const scene = start([]);
+        scene.stop(1000);
         advance(1000);
         
-        assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 0%', 'stop']);
+        assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 100%', 'fade out 0%', 'stop']);
     });
 
     test('fade out, after', function() {
-        const stop = start([]);
-        stop(1000);
+        const scene = start([]);
+        scene.stop(1000);
         advance(1500);
         
-        assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 0%', 'stop']);
+        assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 100%', 'fade out 0%', 'stop']);
     });
 
     test('stop scene during fade-in', function() {
-        const stop = start([], 1000);
+        const scene = start([], 1000);
         advance(500);
-        stop(0);
+        scene.stop(0);
         advance(100);
         
         assertEqual(events, ['start', 'fade in 50%', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 0%', 'stop']);
     });
 
     test('fade out scene during fade-in', function() {
-        const stop = start([], 1000);
+        const scene = start([], 1000);
         advance(500);
-        stop(1000);
+        scene.stop(1000);
         advance(100);
         
-        assertEqual(events, ['start', 'fade in 50%', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 90%']);
+        assertEqual(events, ['start', 'fade in 50%', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 100%', 'fade out 90%']);
     });
 
     test('abort scene during fade-out', function() {
-        const stop = start([]);
-        const abort = stop(1000);
+        const scene = start([]);
+        const abort = scene.stop(1000);
         advance(500);
         abort(0);
         advance(100);
         
-        assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 50%', 'fade out 0%', 'stop']);
+        assertEqual(events, ['start', 'fade in 100%', 'stop fade in', 'start fade out', 'fade out 100%', 'fade out 50%', 'fade out 0%', 'stop']);
     });
 };

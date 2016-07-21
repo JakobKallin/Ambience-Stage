@@ -71,6 +71,20 @@ export default function() {
                                 };
                             }
                         }
+                    },
+                    image: () => ({
+                        stop: nothing,
+                        fade: nothing
+                    }),
+                    fade: {
+                        in: {
+                            step: nothing,
+                            stop: nothing
+                        },
+                        out: {
+                            start: nothing,
+                            step: nothing
+                        }
                     }
                 };
             },
@@ -561,24 +575,24 @@ export default function() {
     });
     
     test('tracks stop after sound is stopped', () => {
-        const stop = start([{
+        const scene = start([{
             type: 'sound',
             tracks: ['one']
         }], soundCallbacks());
         advance(0.5);
-        stop(0);
+        scene.stop(0);
         
         assertEqual(events, ['start sound', 'start one', 'stop one', 'stop sound']);
     });
     
     test('tracks stop after sound is stopped during overlap', () => {
-        const stop = start([{
+        const scene = start([{
             type: 'sound',
             tracks: ['one', 'two'],
             overlap: 0.5
         }], soundCallbacks());
         advance(0.75);
-        stop(0);
+        scene.stop(0);
         
         assertEqual(events, ['start sound', 'start one', 'start two', 'stop one', 'stop two', 'stop sound']);
     });
@@ -620,12 +634,12 @@ export default function() {
     });
     
     test('non-looping sound stops during fade-out', () => {
-        var stop = start([{
+        const scene = start([{
             type: 'sound',
             tracks: ['one'],
             loop: false
         }], createCallbacks(/scene|sound/));
-        stop(2);
+        scene.stop(2);
         advance(1);
         
         assertEqual(events, ['start scene', 'start sound', 'stop sound', 'stop scene']);
@@ -637,17 +651,17 @@ export default function() {
             tracks: ['one']
         }], fadeCallbacks(), 1);
         advance(0.25);
-        assertEqual(events, ['start scene', 'start one', 'fade one 25%']);
+        assertEqual(events, ['start scene', 'start one', 'fade one 0%', 'fade one 25%']);
     });
     
     test('track fades out during scene fade-out', () => {
-        const stop = start([{
+        const scene = start([{
             type: 'sound',
             tracks: ['one']
         }], fadeCallbacks());
-        stop(1);
+        scene.stop(1);
         advance(0.25);
-        assertEqual(events, ['start scene', 'start one', 'fade one 75%']);
+        assertEqual(events, ['start scene', 'start one', 'fade one 0%', 'fade one 100%', 'fade one 75%']);
     });
     
     test('tracks fade during overlap and scene fade', () => {
@@ -657,7 +671,7 @@ export default function() {
             overlap: 0.8
         }], fadeCallbacks(), 1);
         advance(0.5);
-        assertEqual(events, ['start scene', 'start one', 'start two', 'fade one 50%', 'fade two 50%'])
+        assertEqual(events, ['start scene', 'start one', 'fade one 0%', 'start two', 'fade two 0%', 'fade one 50%', 'fade two 50%'])
     });
     
     suite('volume', () => {
@@ -666,52 +680,54 @@ export default function() {
         }
         
         test('volume change', () => {
-            const stop = start([{
+            const scene = start([{
                 type: 'sound',
                 tracks: ['one']
             }], volumeCallbacks());
-            stop.volume(0.5);
-            assertEqual(events, ['start one', 'fade one 50%']);
+            scene.volume(0.5);
+            assertEqual(events, ['start one', 'fade one 0%', 'fade one 50%']);
         });
         
         test('volume change during overlap', () => {
-            const stop = start([{
+            const scene = start([{
                 type: 'sound',
                 tracks: ['one', 'two'],
                 overlap: 0.8
             }], volumeCallbacks());
             advance(0.5);
-            stop.volume(0.5);
-            assertEqual(events, ['start one', 'start two', 'fade one 100%', 'fade two 100%', 'fade one 50%', 'fade two 50%']);
+            scene.volume(0.5);
+            assertEqual(events, ['start one', 'fade one 0%', 'start two', 'fade two 0%', 'fade one 100%', 'fade two 100%', 'fade one 50%', 'fade two 50%']);
         });
         
         test('volume change before overlap', () => {
-            const stop = start([{
+            const scene = start([{
                 type: 'sound',
                 tracks: ['one', 'two'],
                 overlap: 0.8
             }], volumeCallbacks());
             advance(0.1);
-            stop.volume(0.5);
+            scene.volume(0.5);
             advance(0.5);
             assertEqual(events, [
                 'start one',
+                'fade one 0%', // Initial volume
                 'fade one 100%', // Regular fade
-                'fade one 100%', // Volume change
                 'fade one 50%', // Volume change
                 'start two',
-                'fade two 50%' // Volume change
+                'fade two 50%', // Initial volume
+                'fade one 50%', // Regular fade
+                'fade two 50%' // Regular fade
             ]);
         });
         
         test('volume change during fade', () => {
-            const stop = start([{
+            const scene = start([{
                 type: 'sound',
                 tracks: ['one'],
             }], volumeCallbacks(), 1);
             advance(0.5);
-            stop.volume(0.5);
-            assertEqual(events, ['start one', 'fade one 50%', 'fade one 25%']);
+            scene.volume(0.5);
+            assertEqual(events, ['start one', 'fade one 0%', 'fade one 50%', 'fade one 25%']);
         });
     });
 }

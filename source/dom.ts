@@ -1,5 +1,6 @@
 export default function dom(container) {
     return {
+        time: () => new Date().getTime(),
         scene: update => {
             const scene = document.createElement('div');
             scene.className = 'scene';

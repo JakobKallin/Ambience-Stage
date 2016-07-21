@@ -1,11 +1,11 @@
-export default function startSound(sound, outside, abortSceneIfSoundOnly) {
-    var loop = 'loop' in sound ? sound.loop : true;
-    var shuffle = 'shuffle' in sound ? sound.shuffle : true;
-    var overlap = sound.overlap || 0;
-    var shuffleArray = outside.shuffle || shuffleArrayRandomly;
-    let volume = 1;
+export default function startSound(sound, outside) {
+    const loop = 'loop' in sound ? sound.loop : true;
+    const shuffle = 'shuffle' in sound ? sound.shuffle : true;
+    const overlap = sound.overlap || 0;
+    const shuffleArray = outside.shuffle || shuffleArrayRandomly;
+    let volume = 0;
     
-    var tracks = sound.tracks.slice();
+    let tracks = sound.tracks.slice();
     if (sound.tracks.length === 0) {
         throw new Error('Cannot start sound without tracks.');
     } 
@@ -15,7 +15,7 @@ export default function startSound(sound, outside, abortSceneIfSoundOnly) {
     
     const soundHandle = outside.sound();
     const outsideTracks = [];
-    var updateLatest = startTrack(0);
+    let updateLatest = startTrack(0);
     
     const fadeSound = newVolume => {
         volume = newVolume;
@@ -25,7 +25,6 @@ export default function startSound(sound, outside, abortSceneIfSoundOnly) {
     const stopSound = once(() => {
         outsideTracks.forEach(t => t.stop());
         soundHandle.stop();
-        abortSceneIfSoundOnly();
     });
     
     return {
@@ -35,21 +34,21 @@ export default function startSound(sound, outside, abortSceneIfSoundOnly) {
     };
     
     function startTrack(index) {
-        var startTime = outside.time();
+        const startTime = outside.time();
         const outsideTrack = soundHandle.track(tracks[index]);
         outsideTrack.stop = once(outsideTrack.stop);
         outsideTracks.push(outsideTrack);
         outsideTrack.fade(volume);
-        var updateNext = nothing;
+        let updateNext = nothing;
         
-        return function update() {
-            var currentTime = outside.time();
-            var elapsed = currentTime - startTime;
+        return function update():boolean {
+            const currentTime = outside.time();
+            const elapsed = currentTime - startTime;
             
             const duration = outsideTrack.duration();
             // Duration not known yet, so don't attempt any overlap until it is.
             if (isNaN(duration)) {
-                return;
+                return true;
             }
             
             if (elapsed >= duration) {
@@ -58,7 +57,7 @@ export default function startSound(sound, outside, abortSceneIfSoundOnly) {
             }
             
             if (elapsed >= duration - overlap && updateNext === nothing) {
-                if ( (index + 1) in tracks ) {
+                if ((index + 1) in tracks) {
                     updateNext = startTrack(index + 1);
                 }
                 else if (loop) {
@@ -72,15 +71,20 @@ export default function startSound(sound, outside, abortSceneIfSoundOnly) {
             if (elapsed >= duration) {
                 if (updateNext === nothing) {
                     stopSound();
+                    return false;
                 }
                 else {
                     updateLatest = updateNext;
                 }
             }
+            
+            return true;
         };
     }
     
-    function nothing() {}
+    function nothing() {
+        return true;
+    }
     
     function once(callback) {
         const args = arguments;

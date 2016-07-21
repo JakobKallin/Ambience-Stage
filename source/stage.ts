@@ -2,15 +2,18 @@ import start from './scene';
 
 export default function stage(outside) {
     let abort = nothing;
-    let stop = fade => nothing;
+    let stop = {
+        stop: fadeDuration => nothing,
+        volume: newVolume => {}
+    };
     
-    return (items, fadeInDuration?) => {
+    return (items, fadeInDuration=0) => {
         abort();
-        abort = stop(fadeInDuration);
+        abort = stop.stop(fadeInDuration);
         stop = start(items, fadeInDuration, outside);
         return {
             volume: ratio => {
-                stop['volume'](ratio);
+                stop.volume(ratio);
             }
         };
     }

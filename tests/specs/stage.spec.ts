@@ -71,6 +71,7 @@ export default function() {
             'fade in 0 100%',
             'stop fade in 0',
             'start fade out 0',
+            'fade out 0 100%',
             'start 1',
             'fade out 0 75%',
             'fade in 1 25%'
@@ -88,12 +89,14 @@ export default function() {
             'fade in 0 100%',
             'stop fade in 0',
             'start fade out 0',
+            'fade out 0 100%',
             'start 1',
             'fade out 0 0%',
             'stop 0',
             'fade in 1 100%',
             'stop fade in 1',
             'start fade out 1',
+            'fade out 1 100%',
             'start 2',
             'fade out 1 75%',
             'fade in 2 25%'
