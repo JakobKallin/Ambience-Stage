@@ -54,7 +54,7 @@ export default function() {
         
         start = function(items, fade) {
             fade = fade || 0;
-            return ambience(items, fade, callbacks);
+            return ambience(items, fade, 1, callbacks);
         };
     });
 

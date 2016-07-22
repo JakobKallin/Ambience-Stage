@@ -24,7 +24,7 @@ export default function() {
         start = function(items, callbacks, fade) {
             fade = fade || 0;
             callbacks = callbacks || createCallbacks(defaultFilter);
-            return ambience(items, fade, callbacks);
+            return ambience(items, fade, 1, callbacks);
         };
     });
     

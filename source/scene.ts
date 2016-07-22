@@ -8,9 +8,8 @@ enum SceneState {
     Ended
 }
 
-export default function startScene(items, fadeInDuration=0, outside) {
+export default function startScene(items, fadeInDuration=0, volume=1, outside) {
     let fadeOutDuration:number = null;
-    let volume:number = 1;
     let started:number = null;
     let stopped:number = null;
     const handles = {
@@ -174,14 +173,16 @@ export default function startScene(items, fadeInDuration=0, outside) {
         return scenesPlaying;
     }
         
-    const stop = fadeDuration => {
+    const stop = (fadeDuration=0) => {
         if (state === SceneState.FadingIn || state === SceneState.Playing) {
             stopped = outside.time();
             fadeOutDuration = fadeDuration;
             enterState(SceneState.FadingOut);
             update();
         }
-        return end;
+        else {
+            end();
+        }
     };
     
     const end = () => {

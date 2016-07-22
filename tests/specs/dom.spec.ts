@@ -125,16 +125,17 @@ export default function() {
         });
         
         test('stop one of many', function() {
+            // The number of tracks has been reduced to two here because only
+            // two tracks are allocated by the mobile-support playback. This
+            // should probably be tested at a different level of abstraction.
             const soundHandle = dom.scene(nothing).sound();
             const first = soundHandle.track('silence-1.ogg#1');
             const second = soundHandle.track('silence-1.ogg#2');
-            const third = soundHandle.track('silence-1.ogg#3');
             const element = tracks()[1];
             second.stop();
             
-            assertEqual(tracks().length, 2);
+            assertEqual(tracks().length, 1);
             assertEqual(tracks()[0].getAttribute('src'), 'silence-1.ogg#1');
-            assertEqual(tracks()[1].getAttribute('src'), 'silence-1.ogg#3');
             assertEqual(element.paused, true);
         });
         
@@ -220,7 +221,7 @@ export default function() {
     suite('complete', () => {
         test('single scene', () => {
             const stage = createStage(createDom(container));
-            stage([
+            stage.start([
                 { type: 'image', url: 'transparent-10.png' },
                 { type: 'sound', tracks: ['silence-1.ogg'] }
             ]);
@@ -239,13 +240,13 @@ export default function() {
         test('crossfading scenes', () => {
             return new Promise((resolve, reject) => {
                 const stage = createStage(createDom(container));
-                stage([
+                stage.start([
                     { type: 'image', url: 'transparent-10.png' },
                     { type: 'sound', tracks: ['silence-10.ogg'] }
                 ], 500);
                 
                 setTimeout(() => {
-                    stage([
+                    stage.start([
                         { type: 'image', url: 'transparent-10.png' },
                         { type: 'sound', tracks: ['silence-10.ogg'] }
                     ], 500);
