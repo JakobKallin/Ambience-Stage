@@ -696,7 +696,16 @@ export default function() {
             }], volumeCallbacks());
             advance(0.5);
             scene.volume(0.5);
-            assertEqual(events, ['start one', 'fade one 0%', 'start two', 'fade two 0%', 'fade one 100%', 'fade two 100%', 'fade one 50%', 'fade two 50%']);
+            assertEqual(events, [
+                'start one',
+                'fade one 0%',
+                'start two',
+                'fade two 0%',
+                'fade one 100%',
+                'fade two 100%',
+                'fade one 50%',
+                'fade two 50%'
+            ]);
         });
         
         test('volume change before overlap', () => {
@@ -717,6 +726,34 @@ export default function() {
                 'fade two 50%', // Initial volume
                 'fade one 50%', // Regular fade
                 'fade two 50%' // Regular fade
+            ]);
+        });
+        
+        // This test is based on a bug caused by removing the wrong track from
+        // the list of playing tracks during overlap, in turn caused by passing
+        // a parameter into `indexOf` that was intended for `splice`, causing
+        // what appears to be unspecified behavior (as `splice` requires two
+        // parameters according to MDN). This bug caused volume change for
+        // overlapping audio to only work properly during the actual overlap.
+        test('volume change after overlap', () => {
+            const scene = start([{
+                type: 'sound',
+                tracks: ['one', 'two'],
+                overlap: 0.2
+            }], volumeCallbacks());
+            advance(0.9); // Make sure that we have both tracks playing.
+            advance(0.1); // Then advance so that only the second one is playing.
+            scene.volume(0.5);
+            assertEqual(events, [
+                'start one',
+                'fade one 0%',
+                'start two',
+                'fade two 0%',
+                'fade one 100%',
+                'fade two 100%',
+                'stop one',
+                'fade two 100%',
+                'fade two 50%'
             ]);
         });
         
