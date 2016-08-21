@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+DIR=$(dirname "$0")
+ntsc
+browserify "$DIR/tests/main.js" > "$DIR/tests/bundle.js"

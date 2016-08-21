@@ -10,17 +10,22 @@ export default function() {
     const assert = chai.assert;
     const assertEqual = chai.assert.deepEqual;
     const assertError = chai.assert.throws;
-    
+
     let timer;
     let advance;
     let events;
     let start;
     let volume;
-    
+    let imageScene;
+
     setup(() => {
         timer = Timer();
         advance = timer.advance;
         events = [];
+        imageScene = [{
+            type: 'image',
+            url: 'transparent-10.png'
+        }];
         let latestScene = -1;
         const stage = createStage({
             scene: update => {
@@ -56,9 +61,7 @@ export default function() {
                             }
                         })
                     }),
-                    track: () => ({
-                        duration: () => 1,
-                        fade: () => {},
+                    image: () => ({
                         stop: () => {}
                     })
                 };
@@ -69,16 +72,16 @@ export default function() {
         start = stage.start;
         volume = stage.volume;
     });
-    
+
     function filter(events, f) {
         return events.filter(e => e.match(f));
     }
-    
+
     test('crossfade', () => {
-        start([]);
-        start([], 1000);
+        start(imageScene);
+        start(imageScene, 1000);
         advance(250);
-        
+
         assertEqual(events, [
             'start 0',
             'fade in 0 100%',
@@ -90,13 +93,13 @@ export default function() {
             'fade in 1 25%'
         ]);
     });
-    
+
     test('crossfade twice', () => {
-        start([]);
-        start([], 1000);
-        start([], 1000);
+        start(imageScene);
+        start(imageScene, 1000);
+        start(imageScene, 1000);
         advance(250);
-        
+
         assertEqual(events, [
             'start 0',
             'fade in 0 100%',
@@ -115,7 +118,7 @@ export default function() {
             'fade in 2 25%'
         ]);
     });
-    
+
     test('volume change before crossfade', () => {
         start([{
             type: 'sound',
@@ -127,7 +130,7 @@ export default function() {
             tracks: ['second']
         }], 1000);
         advance(250);
-        
+
         assertEqual(filter(events, /fade track/), [
             'fade track first 0%',
             'fade track first 50%',
@@ -137,7 +140,7 @@ export default function() {
             'fade track second 12.5%'
         ]);
     });
-    
+
     test('volume change during crossfade', () => {
         start([{
             type: 'sound',
@@ -149,7 +152,7 @@ export default function() {
         }], 1000);
         volume(0.5);
         advance(250);
-        
+
         assertEqual(filter(events, /fade track/), [
             'fade track first 0%',
             'fade track first 100%',

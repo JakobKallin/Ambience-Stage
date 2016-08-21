@@ -4,7 +4,7 @@ export default function stage(outside) {
     let fadingOut = null;
     let fadingIn = null;
     let volume = 1;
-    
+
     return {
         start: (items:any[], fadeInDuration=0) => {
             if (fadingOut) fadingOut.stop();
@@ -18,6 +18,6 @@ export default function stage(outside) {
             if (fadingIn) fadingIn.volume(newVolume);
         }
     }
-    
+
     function nothing() {}
 }
