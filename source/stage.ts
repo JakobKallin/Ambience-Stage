@@ -7,7 +7,7 @@ export default function stage(outside) {
     let volume = 1;
 
     return {
-        start: (items:any[], fadeInDuration=0) => {
+        start: (items:any[], fadeInDuration=0):Promise<any> => {
             return new Promise((resolve, reject) => {
                 const callbacks = wrapCallbacks(outside, resolve);
                 if (fadingOut) fadingOut.stop();
