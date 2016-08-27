@@ -163,4 +163,29 @@ export default function() {
             'fade track second 12.5%'
         ]);
     });
+
+    test('scene signals end when stopped by user', done => {
+        start([{
+            type: 'sound',
+            tracks: ['first']
+        }])
+        .then(() => done())
+        .catch(done);
+        start([{
+            type: 'sound',
+            tracks: ['first']
+        }]);
+        advance(0);
+    });
+
+    test('scene signals end when stopped by itself', done => {
+        start([{
+            type: 'sound',
+            tracks: ['first'],
+            loop: false
+        }])
+        .then(() => done())
+        .catch(done);
+        advance(1000);
+    });
 };
